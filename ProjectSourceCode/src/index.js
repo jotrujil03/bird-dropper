@@ -84,9 +84,6 @@ app.post('/login', (req, res) => {
       user.first_name = data.first_name;
       user.last_name = data.last_name;
       user.email = data.email;
-      user.year = data.year;
-      user.major = data.major;
-      user.degree = data.degree;
 
       req.session.user = user;
       req.session.save();
