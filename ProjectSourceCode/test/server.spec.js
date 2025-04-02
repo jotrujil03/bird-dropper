@@ -28,5 +28,31 @@ describe('Server!', () => {
 });
 
 // *********************** TODO: WRITE 2 UNIT TESTCASES **************************
+describe('Login API', () => {
+  it('should login user with valid credentials', done => {
+    chai
+      .request(server)
+      .post('/login')
+      .send({ username: 'testuser', password: 'testpass123' })
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body.message).to.equal('Login successful');
+        done();
+      });
+  });
+
+  it('should reject login with invalid credentials', done => {
+    chai
+      .request(server)
+      .post('/login')
+      .send({ username: 'wronguser', password: 'wrongpass' })
+      .end((err, res) => {
+        expect(res).to.have.status(401);
+        expect(res.body.message).to.equal('Invalid username or password');
+        done();
+      });
+  });
+});
+
 
 // ********************************************************************************
