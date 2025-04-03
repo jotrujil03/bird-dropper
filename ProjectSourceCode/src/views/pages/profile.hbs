@@ -1,43 +1,38 @@
 {{> header}}
 {{> nav}}
 
-<div class="container mt-5">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-7">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h3 class="mb-0">Your Profile</h3>
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg rounded-3">
+                <div class="card-header bg-primary text-white text-center rounded-top">
+                    <h2 class="mb-0">Your Profile</h2>
                 </div>
-                <div class="card-body p-4">
-                    <div class="text-center mb-4">
-                        <img src="{{profileImage}}" class="rounded-circle shadow-sm" alt="Profile Picture" width="120" height="120">
+                <div class="card-body text-center px-4 py-5">
+                    <img src="{{profileImage}}" class="rounded-circle shadow-lg border border-3 border-primary mb-4" alt="Profile Picture" width="140" height="140">
+
+                    <h3 class="fw-bold mb-3">{{username}}</h3>
+                    <hr class="my-4">
+
+                    <div class="text-start mb-3">
+                        <label class="form-label text-muted"><strong>Email</strong></label>
+                        <p class="fs-5">{{email}}</p>
                     </div>
 
-                    <h4 class="text-center">{{username}}</h4>
-                    <hr>
-
-                    <div class="mb-3">
-                        <label class="form-label"><strong>Email:</strong></label>
-                        <p>{{email}}</p>
+                    <div class="text-start mb-3">
+                        <label class="form-label text-muted"><strong>Bio</strong></label>
+                        <p class="fs-5">{{bio}}</p>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label"><strong>Bio:</strong></label>
-                        <p>{{bio}}</p>
+                    <div class="text-start mb-4">
+                        <label class="form-label text-muted"><strong>Member Since</strong></label>
+                        <p class="fs-5">{{memberSince}}</p>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label"><strong>Member Since:</strong></label>
-                        <p>{{memberSince}}</p>
+                    <div class="d-grid gap-2 d-md-flex justify-content-center">
+                        <a href="/edit-profile" class="btn btn-primary btn-lg px-4">Edit Profile</a>
+                        <a href="/logout" class="btn btn-outline-danger btn-lg px-4">Logout</a>
                     </div>
-
-                    <div class="d-grid gap-2">
-                        <a href="/edit-profile" class="btn btn-primary">Edit Profile</a>
-                    </div>
-
-                </div>
-                <div class="card-footer text-center py-3">
-                    <a href="/logout" class="btn btn-outline-danger">Logout</a>
                 </div>
             </div>
         </div>
