@@ -276,11 +276,12 @@ app.post('/courses/add', (req, res) => {
 });
 
 // -------------------------------------  LOGOUT ROUTE  ------------------------------------------------
-app.get('/logout', (req, res) => {
+app.get('/login', (req, res) => {
   req.session.destroy(function(err) {
-    res.render('pages/logout');
+    res.redirect('/login');
   });
 });
+
 
 // -------------------------------------  START SERVER  ------------------------------------------------
 app.listen(3000, () => {
