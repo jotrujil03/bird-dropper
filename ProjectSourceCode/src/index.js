@@ -95,6 +95,20 @@ app.post('/login', (req, res) => {
     });
 });
 
+app.get('/profile', (req, res) => {
+  // Retrieve user data here from session or database
+  const userData = {
+      username: 'john_doe',
+      email: 'john@example.com',
+      bio: 'Bird enthusiast!',
+      profileImage: '/images/profile.jpg',
+      memberSince: 'January 2023'
+  };
+
+  res.render('profile', userData);
+});
+
+
 // Render registration form
 app.get('/register', (req, res) => {
   res.render('pages/register');
