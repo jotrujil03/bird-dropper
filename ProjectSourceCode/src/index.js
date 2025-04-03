@@ -20,6 +20,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// ✅ Serve static files from the 'resources' folder
+app.use(express.static(path.join(__dirname, 'resources')));
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -66,12 +69,10 @@ const user = {
 
 // -------------------------------------  PUBLIC ROUTES (Login & Register)  ----------------------------
 
-// Render login form
 app.get('/login', (req, res) => {
   res.render('pages/login');
 });
 
-// Login submission
 app.post('/login', (req, res) => {
   const { email, username } = req.body;
   const query = 'SELECT * FROM students WHERE email = $1 LIMIT 1';
@@ -96,7 +97,6 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/profile', (req, res) => {
-  // Retrieve user data here from session or database
   const userData = {
       username: 'john_doe',
       email: 'john@example.com',
@@ -108,13 +108,10 @@ app.get('/profile', (req, res) => {
   res.render('profile', userData);
 });
 
-
-// Render registration form
 app.get('/register', (req, res) => {
   res.render('pages/register');
 });
 
-// Register submission
 app.post('/register', (req, res) => {
   const {
     first_name,
