@@ -20,7 +20,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// ✅ Serve static files from the 'resources' folder
+// ✅ Serve static files from the 'resources' folder (for favicon, CSS, images, etc.)
 app.use(express.static(path.join(__dirname, 'resources')));
 
 app.use(
@@ -96,18 +96,6 @@ app.post('/login', (req, res) => {
     });
 });
 
-app.get('/profile', (req, res) => {
-  const userData = {
-      username: 'john_doe',
-      email: 'john@example.com',
-      bio: 'Bird enthusiast!',
-      profileImage: '/images/profile.jpg',
-      memberSince: 'January 2023'
-  };
-
-  res.render('profile', userData);
-});
-
 app.get('/register', (req, res) => {
   res.render('pages/register');
 });
@@ -146,7 +134,22 @@ app.post('/register', (req, res) => {
     });
 });
 
-// -------------------------------------  AUTH MIDDLEWARE (after public routes)  ------------------------
+app.get('/profile', (req, res) => {
+  const userData = {
+    username: 'john_doe',
+    email: 'john@example.com',
+    bio: 'Bird enthusiast!',
+    profileImage: '/images/profile.jpg',
+    memberSince: 'January 2023'
+  };
+
+  res.render('profile', userData);
+});
+
+// -------------------------------------  AUTH MIDDLEWARE  ------------------------
+// Uncomment this line when you're ready to enforce login
+// app.use(auth);
+
 const auth = (req, res, next) => {
   if (!req.session.user) {
     return res.redirect('/login');
@@ -154,21 +157,22 @@ const auth = (req, res, next) => {
   next();
 };
 
-app.use(auth);
-
-// -------------------------------------  PROTECTED ROUTES  --------------------------------------------
+// -------------------------------------  HOME ROUTE (PUBLIC FOR NOW)  ----------------------------
 app.get('/', (req, res) => {
+  const user = req.session.user || {};
+
   res.render('pages/home', {
-    username: req.session.user.username,
-    first_name: req.session.user.first_name,
-    last_name: req.session.user.last_name,
-    email: req.session.user.email,
-    year: req.session.user.year,
-    major: req.session.user.major,
-    degree: req.session.user.degree,
+    username: user.username || 'Guest',
+    first_name: user.first_name || '',
+    last_name: user.last_name || '',
+    email: user.email || '',
+    year: user.year || '',
+    major: user.major || '',
+    degree: user.degree || '',
   });
 });
 
+// -------------------------------------  PROTECTED ROUTES  --------------------------------------------
 const student_courses = `
   SELECT DISTINCT
     courses.course_id,
@@ -205,11 +209,12 @@ const all_courses = `
 
 app.get('/courses', (req, res) => {
   const taken = req.query.taken;
+  const studentId = req.session.user?.student_id || 0;
 
-  db.any(taken ? student_courses : all_courses, [req.session.user.student_id])
+  db.any(taken ? student_courses : all_courses, [studentId])
     .then(courses => {
       res.render('pages/courses', {
-        email: user.email,
+        email: user.email || '',
         courses,
         action: req.query.taken ? 'delete' : 'add',
       });
@@ -217,7 +222,7 @@ app.get('/courses', (req, res) => {
     .catch(err => {
       res.render('pages/courses', {
         courses: [],
-        email: user.email,
+        email: user.email || '',
         error: true,
         message: err.message,
       });
@@ -226,6 +231,7 @@ app.get('/courses', (req, res) => {
 
 app.post('/courses/add', (req, res) => {
   const course_id = parseInt(req.body.course_id);
+  const student_id = req.session.user?.student_id || 0;
 
   db.tx(async t => {
     const { num_prerequisites } = await t.one(
@@ -237,7 +243,7 @@ app.post('/courses/add', (req, res) => {
       const [row] = await t.any(
         `SELECT num_prerequisites_satisfied FROM student_prerequisite_count
          WHERE course_id = $1 AND student_id = $2`,
-        [course_id, req.session.user.student_id]
+        [course_id, student_id]
       );
 
       if (!row || row.num_prerequisites_satisfied < num_prerequisites) {
@@ -247,21 +253,21 @@ app.post('/courses/add', (req, res) => {
 
     await t.none(
       'INSERT INTO student_courses(course_id, student_id) VALUES ($1, $2);',
-      [course_id, req.session.user.student_id]
+      [course_id, student_id]
     );
 
-    return t.any(all_courses, [req.session.user.student_id]);
+    return t.any(all_courses, [student_id]);
   })
     .then(courses => {
       res.render('pages/courses', {
-        email: user.email,
+        email: user.email || '',
         courses,
         message: `Successfully added course ${req.body.course_id}`,
       });
     })
     .catch(err => {
       res.render('pages/courses', {
-        email: user.email,
+        email: user.email || '',
         courses: [],
         error: true,
         message: err.message,
