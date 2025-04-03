@@ -20,7 +20,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// ✅ Serve static files from the 'resources' folder (for favicon, CSS, images, etc.)
+// Serve static files from the 'resources' folder (for favicon, CSS, images, etc.)
 app.use(express.static(path.join(__dirname, 'resources')));
 
 app.use(
@@ -55,47 +55,42 @@ db.connect()
     console.log('ERROR', error.message || error);
   });
 
-// -------------------------------------  USER OBJECT   ------------------------------------------------
-const user = {
-  student_id: undefined,
-  username: undefined,
-  first_name: undefined,
-  last_name: undefined,
-  email: undefined,
-  year: undefined,
-  major: undefined,
-  degree: undefined,
-};
-
 // -------------------------------------  PUBLIC ROUTES (Login & Register)  ----------------------------
 
+// GET route for login page using the provided login.hbs
 app.get('/login', (req, res) => {
-  res.render('pages/login');
+  res.render('pages/login', { error: null });
 });
 
+// POST route for login that checks credentials from the "users" table
 app.post('/login', (req, res) => {
-  const { email, username } = req.body;
-  const query = 'SELECT * FROM students WHERE email = $1 LIMIT 1';
-  const values = [email];
+  const { username, password } = req.body;
+  const query = 'SELECT * FROM users WHERE username = $1 AND password = $2 LIMIT 1';
+  const values = [username, password];
 
-  db.one(query, values)
+  // Use oneOrNone so that a missing row does not throw an error
+  db.oneOrNone(query, values)
     .then(data => {
-      user.student_id = data.student_id;
-      user.username = username;
-      user.first_name = data.first_name;
-      user.last_name = data.last_name;
-      user.email = data.email;
-
-      req.session.user = user;
-      req.session.save();
-      res.redirect('/');
+      if (data) {
+        // Set session user object based on the "users" table data
+        req.session.user = {
+          username: data.username,
+          // Add additional fields if needed
+        };
+        req.session.save(() => {
+          res.redirect('/profile');
+        });
+      } else {
+        res.render('pages/login', { error: 'Invalid username or password.' });
+      }
     })
     .catch(err => {
-      console.log(err);
-      res.render('pages/login', { error: 'Login failed. Please check your credentials.' });
+      console.error('Login query error:', err);
+      res.render('pages/login', { error: 'An error occurred during login. Please try again.' });
     });
 });
 
+// Registration routes remain as is (using the students table)
 app.get('/register', (req, res) => {
   res.render('pages/register');
 });
@@ -134,22 +129,24 @@ app.post('/register', (req, res) => {
     });
 });
 
+// GET route for profile page that redirects if not logged in
 app.get('/profile', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+
   const userData = {
-    username: 'john_doe',
-    email: 'john@example.com',
-    bio: 'Bird enthusiast!',
-    profileImage: '/images/profile.jpg',
-    memberSince: 'January 2023'
+    username: req.session.user.username,
+    email: req.session.user.email || 'admin@example.com',
+    bio: req.session.user.bio || 'Default bio here',
+    memberSince: req.session.user.memberSince || 'Unknown',
+    profileImage: req.session.user.profileImage || '/images/default-profile.png'
   };
 
-  res.render('profile', userData);
+  res.render('pages/profile', userData);
 });
 
 // -------------------------------------  AUTH MIDDLEWARE  ------------------------
-// Uncomment this line when you're ready to enforce login
-// app.use(auth);
-
 const auth = (req, res, next) => {
   if (!req.session.user) {
     return res.redirect('/login');
@@ -159,129 +156,30 @@ const auth = (req, res, next) => {
 
 // -------------------------------------  HOME ROUTE (PUBLIC FOR NOW)  ----------------------------
 app.get('/', (req, res) => {
-  const user = req.session.user || {};
-
+  if (req.session.user) {
+    return res.redirect('/profile');
+  }
+  const sessionUser = req.session.user || {};
   res.render('pages/home', {
-    username: user.username || 'Guest',
-    first_name: user.first_name || '',
-    last_name: user.last_name || '',
-    email: user.email || '',
-    year: user.year || '',
-    major: user.major || '',
-    degree: user.degree || '',
+    username: sessionUser.username || 'Guest',
+    first_name: sessionUser.first_name || '',
+    last_name: sessionUser.last_name || '',
+    email: sessionUser.email || '',
+    year: sessionUser.year || '',
+    major: sessionUser.major || '',
+    degree: sessionUser.degree || '',
   });
-});
-
-// -------------------------------------  PROTECTED ROUTES  --------------------------------------------
-const student_courses = `
-  SELECT DISTINCT
-    courses.course_id,
-    courses.course_name,
-    courses.credit_hours,
-    students.student_id = $1 AS "taken"
-  FROM
-    courses
-    JOIN student_courses ON courses.course_id = student_courses.course_id
-    JOIN students ON student_courses.student_id = students.student_id
-  WHERE students.student_id = $1
-  ORDER BY courses.course_id ASC;
-`;
-
-const all_courses = `
-  SELECT
-    courses.course_id,
-    courses.course_name,
-    courses.credit_hours,
-    CASE
-    WHEN
-    courses.course_id IN (
-      SELECT student_courses.course_id
-      FROM student_courses
-      WHERE student_courses.student_id = $1
-    ) THEN TRUE
-    ELSE FALSE
-    END
-    AS "taken"
-  FROM
-    courses
-  ORDER BY courses.course_id ASC;
-`;
-
-app.get('/courses', (req, res) => {
-  const taken = req.query.taken;
-  const studentId = req.session.user?.student_id || 0;
-
-  db.any(taken ? student_courses : all_courses, [studentId])
-    .then(courses => {
-      res.render('pages/courses', {
-        email: user.email || '',
-        courses,
-        action: req.query.taken ? 'delete' : 'add',
-      });
-    })
-    .catch(err => {
-      res.render('pages/courses', {
-        courses: [],
-        email: user.email || '',
-        error: true,
-        message: err.message,
-      });
-    });
-});
-
-app.post('/courses/add', (req, res) => {
-  const course_id = parseInt(req.body.course_id);
-  const student_id = req.session.user?.student_id || 0;
-
-  db.tx(async t => {
-    const { num_prerequisites } = await t.one(
-      `SELECT num_prerequisites FROM course_prerequisite_count WHERE course_id = $1`,
-      [course_id]
-    );
-
-    if (num_prerequisites > 0) {
-      const [row] = await t.any(
-        `SELECT num_prerequisites_satisfied FROM student_prerequisite_count
-         WHERE course_id = $1 AND student_id = $2`,
-        [course_id, student_id]
-      );
-
-      if (!row || row.num_prerequisites_satisfied < num_prerequisites) {
-        throw new Error(`Prerequisites not satisfied for course ${course_id}`);
-      }
-    }
-
-    await t.none(
-      'INSERT INTO student_courses(course_id, student_id) VALUES ($1, $2);',
-      [course_id, student_id]
-    );
-
-    return t.any(all_courses, [student_id]);
-  })
-    .then(courses => {
-      res.render('pages/courses', {
-        email: user.email || '',
-        courses,
-        message: `Successfully added course ${req.body.course_id}`,
-      });
-    })
-    .catch(err => {
-      res.render('pages/courses', {
-        email: user.email || '',
-        courses: [],
-        error: true,
-        message: err.message,
-      });
-    });
 });
 
 // -------------------------------------  LOGOUT ROUTE  ------------------------------------------------
-app.get('/login', (req, res) => {
-  req.session.destroy(function(err) {
+app.get('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Error destroying session:', err);
+    }
     res.redirect('/login');
   });
 });
-
 
 // -------------------------------------  START SERVER  ------------------------------------------------
 app.listen(3000, () => {
