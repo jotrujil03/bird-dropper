@@ -1,0 +1,47 @@
+{{> header}}
+{{> nav}}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3 class="mb-0">Your Profile</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <img src="{{profileImage}}" class="rounded-circle shadow-sm" alt="Profile Picture" width="120" height="120">
+                    </div>
+
+                    <h4 class="text-center">{{username}}</h4>
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Email:</strong></label>
+                        <p>{{email}}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Bio:</strong></label>
+                        <p>{{bio}}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Member Since:</strong></label>
+                        <p>{{memberSince}}</p>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="/edit-profile" class="btn btn-primary">Edit Profile</a>
+                    </div>
+
+                </div>
+                <div class="card-footer text-center py-3">
+                    <a href="/logout" class="btn btn-outline-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{> footer}}
