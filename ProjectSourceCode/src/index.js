@@ -68,17 +68,13 @@ app.post('/login', (req, res) => {
   const query = 'SELECT * FROM users WHERE username = $1 AND password = $2 LIMIT 1';
   const values = [username, password];
 
-  // Use oneOrNone so that a missing row does not throw an error
   db.oneOrNone(query, values)
     .then(data => {
       if (data) {
-        // Set session user object based on the "users" table data
-        req.session.user = {
-          username: data.username,
-          // Add additional fields if needed
-        };
+        req.session.user = { username: data.username };
+        req.session.successMessage = "Successfully logged in!";
         req.session.save(() => {
-          res.redirect('/profile');
+          res.redirect('/');
         });
       } else {
         res.render('pages/login', { error: 'Invalid username or password.' });
@@ -88,6 +84,15 @@ app.post('/login', (req, res) => {
       console.error('Login query error:', err);
       res.render('pages/login', { error: 'An error occurred during login. Please try again.' });
     });
+});
+
+app.get('/', (req, res) => {
+  const successMessage = req.session.successMessage;
+  delete req.session.successMessage;
+  res.render('pages/home', { 
+    user: req.session.user || {}, 
+    successMessage 
+  });
 });
 
 // Registration routes remain as is (using the students table)
@@ -144,6 +149,13 @@ app.get('/profile', (req, res) => {
   };
 
   res.render('pages/profile', userData);
+});
+
+app.get('/settings', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  res.render('pages/settings', { user: req.session.user });
 });
 
 // -------------------------------------  AUTH MIDDLEWARE  ------------------------

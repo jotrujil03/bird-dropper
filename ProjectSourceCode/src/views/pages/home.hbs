@@ -1,57 +1,74 @@
-
 <div class="container">
-    <div class="row justify-content-center mt-5 pt-5">
-        <div class="col-md-8 text-center">
-            <!-- Logo Section -->
-            <div class="mb-4">
-                <h1 class="display-4 fw-bold text-primary">Bird Dropper</h1>
-                <p class="text-muted">Find information about any bird species</p>
-            </div>
-            
-            <!-- Search Bar Section -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body p-3">
-                    <form action="/search" method="GET">
-                        <div class="input-group mb-3">
-                            <input 
-                                type="text" 
-                                name="query" 
-                                class="form-control form-control-lg py-3" 
-                                placeholder="Search for a bird species..." 
-                                aria-label="Search for bird species"
-                                autofocus>
-                            <button class="btn btn-primary px-4" type="submit">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Search Buttons -->
-            <div class="mt-4">
-                <button class="btn btn-light me-2" type="submit" form="search-form">Search Birds</button>
-                <a href="/browse" class="btn btn-light">Browse Popular Birds</a>
-            </div>
-            
-            <!-- Quick Links -->
-            <div class="mt-5">
-                <h5>Popular Searches</h5>
-                <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
-                    <a href="/search?query=American Robin" class="badge bg-light text-dark p-2 text-decoration-none">American Robin</a>
-                    <a href="/search?query=Bald Eagle" class="badge bg-light text-dark p-2 text-decoration-none">Bald Eagle</a>
-                    <a href="/search?query=Blue Jay" class="badge bg-light text-dark p-2 text-decoration-none">Blue Jay</a>
-                    <a href="/search?query=Northern Cardinal" class="badge bg-light text-dark p-2 text-decoration-none">Northern Cardinal</a>
-                    <a href="/search?query=Barn Owl" class="badge bg-light text-dark p-2 text-decoration-none">Barn Owl</a>
-                </div>
-            </div>
-        </div>
+    <!--logged in message -->
+  {{#if successMessage}}
+    <div class="alert alert-success mt-3 small-auto-dismiss" role="alert" style="font-size: 0.85rem; padding: 0.5rem 1rem; max-width: 300px; margin: 0 auto;">
+      {{successMessage}}
     </div>
+  {{/if}}
+
+  <div class="row justify-content-center mt-5 pt-5">
+    <div class="col-md-8 text-center">
+      <!-- Logo Section -->
+      <div class="mb-4">
+        <h1 class="display-4 fw-bold text-primary">Bird Dropper</h1>
+        <p class="text-muted">Find information about any bird species</p>
+      </div>
+      
+      <!-- Search Bar Section -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+          <form action="/search" method="GET">
+            <div class="input-group mb-3">
+              <input 
+                type="text" 
+                name="query" 
+                class="form-control form-control-lg py-3" 
+                placeholder="Search for a bird species..." 
+                aria-label="Search for bird species"
+                autofocus>
+              <button class="btn btn-primary px-4" type="submit">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Search Buttons -->
+      <div class="mt-4">
+        <button class="btn btn-light me-2" type="submit" form="search-form">Search Birds</button>
+        <a href="/browse" class="btn btn-light">Browse Popular Birds</a>
+      </div>
+      
+      <!-- Quick Links -->
+      <div class="mt-5">
+        <h5>Popular Searches</h5>
+        <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+          <a href="/search?query=American Robin" class="badge bg-light text-dark p-2 text-decoration-none">American Robin</a>
+          <a href="/search?query=Bald Eagle" class="badge bg-light text-dark p-2 text-decoration-none">Bald Eagle</a>
+          <a href="/search?query=Blue Jay" class="badge bg-light text-dark p-2 text-decoration-none">Blue Jay</a>
+          <a href="/search?query=Northern Cardinal" class="badge bg-light text-dark p-2 text-decoration-none">Northern Cardinal</a>
+          <a href="/search?query=Barn Owl" class="badge bg-light text-dark p-2 text-decoration-none">Barn Owl</a>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Optional bird silhouette background -->
 <div class="position-fixed bottom-0 end-0 opacity-10 d-none d-lg-block" style="z-index: -1">
-    <i class="fas fa-dove text-primary" style="font-size: 20rem;"></i>
+  <i class="fas fa-dove text-primary" style="font-size: 20rem;"></i>
 </div>
 
 {{> footer}}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function(){
+    const alertElem = document.querySelector('.small-auto-dismiss');
+    if(alertElem) {
+      setTimeout(() => {
+        alertElem.remove();
+      }, 3000);
+    }
+  });
+</script>
