@@ -20,7 +20,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files from the 'resources' folder (for favicon, CSS, images, etc.)
+// ✅ Serve static files from the 'resources' folder (for favicon, CSS, images, etc.)
 app.use(express.static(path.join(__dirname, 'resources')));
 
 app.use(
@@ -55,47 +55,43 @@ db.connect()
     console.log('ERROR', error.message || error);
   });
 
+// -------------------------------------  USER OBJECT   ------------------------------------------------
+const user = {
+  student_id: undefined,
+  username: undefined,
+  first_name: undefined,
+  last_name: undefined,
+  email: undefined,
+};
+
 // -------------------------------------  PUBLIC ROUTES (Login & Register)  ----------------------------
 
-// GET route for login page using the provided login.hbs
 app.get('/login', (req, res) => {
-  res.render('pages/login', { error: null });
+  res.render('pages/login');
 });
 
-// POST route for login that checks credentials from the "users" table
 app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const query = 'SELECT * FROM users WHERE username = $1 AND password = $2 LIMIT 1';
-  const values = [username, password];
+  const { email, username } = req.body;
+  const query = 'SELECT * FROM students WHERE email = $1 LIMIT 1';
+  const values = [email];
 
-  db.oneOrNone(query, values)
+  db.one(query, values)
     .then(data => {
-      if (data) {
-        req.session.user = { username: data.username };
-        req.session.successMessage = "Successfully logged in!";
-        req.session.save(() => {
-          res.redirect('/');
-        });
-      } else {
-        res.render('pages/login', { error: 'Invalid username or password.' });
-      }
+      user.username = username;
+      user.first_name = data.first_name;
+      user.last_name = data.last_name;
+      user.email = data.email;
+
+      req.session.user = user;
+      req.session.save();
+      res.redirect('/');
     })
     .catch(err => {
-      console.error('Login query error:', err);
-      res.render('pages/login', { error: 'An error occurred during login. Please try again.' });
+      console.log(err);
+      res.render('pages/login', { error: 'Login failed. Please check your credentials.' });
     });
 });
 
-app.get('/', (req, res) => {
-  const successMessage = req.session.successMessage;
-  delete req.session.successMessage;
-  res.render('pages/home', { 
-    user: req.session.user || {}, 
-    successMessage 
-  });
-});
-
-// Registration routes remain as is (using the students table)
 app.get('/register', (req, res) => {
   res.render('pages/register');
 });
@@ -107,10 +103,7 @@ app.post('/register', (req, res) => {
     email,
     username,
     password,
-    confirm_password,
-    year,
-    major,
-    degree
+    confirm_password
   } = req.body;
 
   if (password !== confirm_password) {
@@ -118,12 +111,12 @@ app.post('/register', (req, res) => {
   }
 
   const insertQuery = `
-    INSERT INTO students (first_name, last_name, email, username, password, year, major, degree)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO students (first_name, last_name, email, username, password)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
   `;
 
-  db.one(insertQuery, [first_name, last_name, email, username, password, year, major, degree])
+  db.one(insertQuery, [first_name, last_name, email, username, password])
     .then(newUser => {
       req.session.user = newUser;
       res.redirect('/');
@@ -134,31 +127,22 @@ app.post('/register', (req, res) => {
     });
 });
 
-// GET route for profile page that redirects if not logged in
 app.get('/profile', (req, res) => {
-  if (!req.session.user) {
-    return res.redirect('/login');
-  }
-
   const userData = {
-    username: req.session.user.username,
-    email: req.session.user.email || 'admin@example.com',
-    bio: req.session.user.bio || 'Default bio here',
-    memberSince: req.session.user.memberSince || 'Unknown',
-    profileImage: req.session.user.profileImage || '/images/default-profile.png'
+    username: 'john_doe',
+    email: 'john@example.com',
+    bio: 'Bird enthusiast!',
+    profileImage: '/images/profile.jpg',
+    memberSince: 'January 2023'
   };
 
-  res.render('pages/profile', userData);
-});
-
-app.get('/settings', (req, res) => {
-  if (!req.session.user) {
-    return res.redirect('/login');
-  }
-  res.render('pages/settings', { user: req.session.user });
+  res.render('profile', userData);
 });
 
 // -------------------------------------  AUTH MIDDLEWARE  ------------------------
+// Uncomment this line when you're ready to enforce login
+// app.use(auth);
+
 const auth = (req, res, next) => {
   if (!req.session.user) {
     return res.redirect('/login');
@@ -168,30 +152,23 @@ const auth = (req, res, next) => {
 
 // -------------------------------------  HOME ROUTE (PUBLIC FOR NOW)  ----------------------------
 app.get('/', (req, res) => {
-  if (req.session.user) {
-    return res.redirect('/profile');
-  }
-  const sessionUser = req.session.user || {};
+  const user = req.session.user || {};
+
   res.render('pages/home', {
-    username: sessionUser.username || 'Guest',
-    first_name: sessionUser.first_name || '',
-    last_name: sessionUser.last_name || '',
-    email: sessionUser.email || '',
-    year: sessionUser.year || '',
-    major: sessionUser.major || '',
-    degree: sessionUser.degree || '',
+    username: user.username || 'Guest',
+    first_name: user.first_name || '',
+    last_name: user.last_name || '',
+    email: user.email || ''
   });
 });
 
 // -------------------------------------  LOGOUT ROUTE  ------------------------------------------------
-app.get('/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      console.error('Error destroying session:', err);
-    }
+app.get('/login', (req, res) => {
+  req.session.destroy(function(err) {
     res.redirect('/login');
   });
 });
+
 
 // -------------------------------------  START SERVER  ------------------------------------------------
 app.listen(3000, () => {
