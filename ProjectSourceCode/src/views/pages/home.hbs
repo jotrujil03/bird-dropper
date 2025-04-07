@@ -1,12 +1,57 @@
 <div class="container">
-    <!--logged in message -->
+  <style>
+    /* Overall Page Styling */
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Roboto', sans-serif;
+    }
+    .container {
+      padding-top: 30px; /* Reduced padding to bring everything higher */
+    }
+
+    /* Card & Input Styling */
+    .card {
+      border-radius: 30px !important;
+    }
+    .form-control {
+      border-radius: 30px;
+      border: none;
+      padding: 0.75rem 1.25rem;
+    }
+    .input-group-text {
+      background-color: transparent;
+      border: none;
+      font-size: 1.25rem;
+    }
+
+    /* Button Styling */
+    .btn {
+      border-radius: 30px;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #e2e6ea;
+    }
+
+    /* Badge (Quick Links) Styling */
+    .badge {
+      border-radius: 20px;
+      transition: background-color 0.3s;
+      cursor: pointer;
+    }
+    .badge:hover {
+      background-color: #e2e6ea;
+    }
+  </style>
+  
+  <!-- Logged in message -->
   {{#if successMessage}}
     <div class="alert alert-success mt-3 small-auto-dismiss" role="alert" style="font-size: 0.85rem; padding: 0.5rem 1rem; max-width: 300px; margin: 0 auto;">
       {{successMessage}}
     </div>
   {{/if}}
 
-  <div class="row justify-content-center mt-5 pt-5">
+  <div class="row justify-content-center mt-3 pt-3">
     <div class="col-md-8 text-center">
       <!-- Logo Section -->
       <div class="mb-4">
@@ -17,23 +62,37 @@
       <!-- Search Bar Section -->
       <div class="card shadow-sm border-0 mb-4">
         <div class="card-body p-3">
-          <form action="/search" method="GET">
-            <div class="input-group mb-3">
+          <form id="search-form" action="/search" method="GET" enctype="multipart/form-data">
+            <div class="input-group mb-3 align-items-center">
+              <!-- Search icon on the left -->
+              <span class="input-group-text">
+                <i class="fas fa-search text-muted"></i>
+              </span>
+
+              <!-- Text input -->
               <input 
                 type="text" 
                 name="query" 
-                class="form-control form-control-lg py-3" 
+                class="form-control form-control-lg" 
                 placeholder="Search for a bird species..." 
                 aria-label="Search for bird species"
                 autofocus>
-              <button class="btn btn-primary px-4" type="submit">
-                <i class="fas fa-search"></i>
-              </button>
+
+              <!-- Upload icon -->
+              <label for="upload-image" class="input-group-text" style="cursor: pointer;">
+                <i class="fas fa-upload text-muted"></i>
+              </label>
+              <input 
+                type="file" 
+                name="image" 
+                id="upload-image" 
+                accept="image/*" 
+                class="d-none">
             </div>
           </form>
         </div>
       </div>
-      
+
       <!-- Search Buttons -->
       <div class="mt-4">
         <button class="btn btn-light me-2" type="submit" form="search-form">Search Birds</button>
