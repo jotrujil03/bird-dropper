@@ -1,56 +1,215 @@
 <div class="about-container">
+    <!-- Hero section with mission statement -->
     <section class="hero">
         <h1>About Bird Dropper</h1>
-        <p class="tagline">Delivering the future, one bird at a time.</p>
+        <p class="mission">Our mission is to make bird watching accessible to everyone by providing innovative tracking solutions.</p>
     </section>
 
-    <section class="mission">
-        <h2>Our Mission</h2>
-        <p>At Bird Dropper, we're dedicated to revolutionizing avian-based delivery solutions. Our innovative approach combines traditional carrier methods with cutting-edge technology to create an eco-friendly alternative to conventional delivery services.</p>
-    </section>
-
-    <section class="history">
-        <h2>Our Story</h2>
-        <p>Founded in 2023, Bird Dropper began with a simple question: why rely on fuel-consuming vehicles when nature has provided us with the perfect delivery system? Our team of ornithologists and software engineers came together to create a solution that respects our environment while meeting modern delivery needs.</p>
-    </section>
-
-    <section class="team">
-        <h2>Our Team</h2>
-        <div class="team-members">
-            {{#if team}}
-                {{#each team}}
-                    <div class="team-member">
-                        <img src="{{this.photo}}" alt="{{this.name}}">
-                        <h3>{{this.name}}</h3>
-                        <p class="position">{{this.position}}</p>
-                        <p class="bio">{{this.bio}}</p>
-                    </div>
-                {{/each}}
-            {{else}}
-                <!-- Placeholder team members -->
-                <div class="team-member">
-                    <div class="placeholder-img"></div>
-                    <h3>Jane Doe</h3>
-                    <p class="position">Chief Ornithologist</p>
-                    <p class="bio">With over 15 years of experience in avian behavior, Jane leads our bird training program.</p>
-                </div>
-                <div class="team-member">
-                    <div class="placeholder-img"></div>
-                    <h3>John Smith</h3>
-                    <p class="position">Lead Developer</p>
-                    <p class="bio">John architected our tracking system that ensures birds always find their way.</p>
-                </div>
-            {{/if}}
+    <!-- Main content sections -->
+    <section class="content-section">
+        <div class="info-card">
+            <div class="card-image">
+                <img src="/images/our-story.svg" alt="Our Story">
+            </div>
+            <div class="card-text">
+                <h2>Our Story</h2>
+                <p>Bird Dropper began with a simple idea: helping bird enthusiasts track and identify their feathered friends. Since our founding, we've grown into a platform used by millions of bird watchers worldwide.</p>
+            </div>
         </div>
     </section>
 
-    <section class="contact">
-        <h2>Contact Us</h2>
-        <p>Have questions about Bird Dropper? We'd love to hear from you!</p>
-        <div class="contact-info">
-            <p><strong>Email:</strong> info@birddropper.com</p>
-            <p><strong>Phone:</strong> (555) 123-4567</p>
-            <p><strong>Address:</strong> 123 Aviary Lane, Birdtown, BT 98765</p>
+    <section class="content-section reverse">
+        <div class="info-card">
+            <div class="card-text">
+                <h2>Our Approach</h2>
+                <p>We believe technology should enhance our connection to nature, not replace it. Our tools are designed to be intuitive, unobtrusive, and educational, helping people appreciate the beauty of birds in their natural habitats.</p>
+            </div>
+            <div class="card-image">
+                <img src="/images/our-approach.svg" alt="Our Approach">
+            </div>
         </div>
     </section>
-</div></section>
+
+    <section class="content-section">
+        <div class="info-card">
+            <div class="card-image">
+                <img src="/images/our-team.svg" alt="Our Team">
+            </div>
+            <div class="card-text">
+                <h2>Our Team</h2>
+                <p>We're a diverse group of ornithologists, developers, designers, and enthusiasts who share a passion for birds. Together, we're working to create the world's most comprehensive bird tracking platform.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats section -->
+    <section class="stats-section">
+        <div class="stat-item">
+            <h3>5M+</h3>
+            <p>Bird species tracked</p>
+        </div>
+        <div class="stat-item">
+            <h3>190+</h3>
+            <p>Countries covered</p>
+        </div>
+        <div class="stat-item">
+            <h3>10M+</h3>
+            <p>Active users</p>
+        </div>
+    </section>
+
+    <!-- Values section -->
+    <section class="values-section">
+        <h2>Our Values</h2>
+        <div class="values-container">
+            <div class="value-item">
+                <h3>Innovation</h3>
+                <p>Continuously improving our technology to better serve bird enthusiasts.</p>
+            </div>
+            <div class="value-item">
+                <h3>Education</h3>
+                <p>Sharing knowledge about birds and their ecosystems.</p>
+            </div>
+            <div class="value-item">
+                <h3>Conservation</h3>
+                <p>Supporting efforts to protect bird habitats around the world.</p>
+            </div>
+            <div class="value-item">
+                <h3>Community</h3>
+                <p>Fostering connections among bird watchers globally.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    /* Google-inspired styling */
+    .about-container {
+        font-family: 'Roboto', Arial, sans-serif;
+        color: #202124;
+        max-width: 1140px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    
+    .hero {
+        text-align: center;
+        padding: 60px 0;
+    }
+    
+    .hero h1 {
+        font-size: 54px;
+        font-weight: 400;
+        margin-bottom: 20px;
+    }
+    
+    .mission {
+        font-size: 24px;
+        max-width: 800px;
+        margin: 0 auto;
+        color: #5f6368;
+    }
+    
+    .content-section {
+        margin: 80px 0;
+    }
+    
+    .info-card {
+        display: flex;
+        align-items: center;
+        gap: 60px;
+    }
+    
+    .reverse .info-card {
+        flex-direction: row-reverse;
+    }
+    
+    .card-image {
+        flex: 1;
+    }
+    
+    .card-image img {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    .card-text {
+        flex: 1;
+    }
+    
+    .card-text h2 {
+        font-size: 36px;
+        font-weight: 400;
+        margin-bottom: 20px;
+        color: #1a73e8;
+    }
+    
+    .card-text p {
+        font-size: 18px;
+        line-height: 1.6;
+        color: #5f6368;
+    }
+    
+    .stats-section {
+        display: flex;
+        justify-content: space-around;
+        margin: 100px 0;
+        text-align: center;
+    }
+    
+    .stat-item h3 {
+        font-size: 48px;
+        font-weight: 500;
+        color: #1a73e8;
+        margin-bottom: 10px;
+    }
+    
+    .values-section {
+        text-align: center;
+        margin: 100px 0;
+    }
+    
+    .values-section h2 {
+        font-size: 36px;
+        font-weight: 400;
+        margin-bottom: 40px;
+    }
+    
+    .values-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 30px;
+    }
+    
+    .value-item {
+        padding: 30px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .value-item h3 {
+        color: #1a73e8;
+        margin-bottom: 15px;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .info-card, .reverse .info-card {
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .stats-section {
+            flex-direction: column;
+            gap: 40px;
+        }
+        
+        .hero h1 {
+            font-size: 40px;
+        }
+        
+        .mission {
+            font-size: 20px;
+        }
+    }
+</style></div>
