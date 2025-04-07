@@ -1,0 +1,56 @@
+<div class="about-container">
+    <section class="hero">
+        <h1>About Bird Dropper</h1>
+        <p class="tagline">Delivering the future, one bird at a time.</p>
+    </section>
+
+    <section class="mission">
+        <h2>Our Mission</h2>
+        <p>At Bird Dropper, we're dedicated to revolutionizing avian-based delivery solutions. Our innovative approach combines traditional carrier methods with cutting-edge technology to create an eco-friendly alternative to conventional delivery services.</p>
+    </section>
+
+    <section class="history">
+        <h2>Our Story</h2>
+        <p>Founded in 2023, Bird Dropper began with a simple question: why rely on fuel-consuming vehicles when nature has provided us with the perfect delivery system? Our team of ornithologists and software engineers came together to create a solution that respects our environment while meeting modern delivery needs.</p>
+    </section>
+
+    <section class="team">
+        <h2>Our Team</h2>
+        <div class="team-members">
+            {{#if team}}
+                {{#each team}}
+                    <div class="team-member">
+                        <img src="{{this.photo}}" alt="{{this.name}}">
+                        <h3>{{this.name}}</h3>
+                        <p class="position">{{this.position}}</p>
+                        <p class="bio">{{this.bio}}</p>
+                    </div>
+                {{/each}}
+            {{else}}
+                <!-- Placeholder team members -->
+                <div class="team-member">
+                    <div class="placeholder-img"></div>
+                    <h3>Jane Doe</h3>
+                    <p class="position">Chief Ornithologist</p>
+                    <p class="bio">With over 15 years of experience in avian behavior, Jane leads our bird training program.</p>
+                </div>
+                <div class="team-member">
+                    <div class="placeholder-img"></div>
+                    <h3>John Smith</h3>
+                    <p class="position">Lead Developer</p>
+                    <p class="bio">John architected our tracking system that ensures birds always find their way.</p>
+                </div>
+            {{/if}}
+        </div>
+    </section>
+
+    <section class="contact">
+        <h2>Contact Us</h2>
+        <p>Have questions about Bird Dropper? We'd love to hear from you!</p>
+        <div class="contact-info">
+            <p><strong>Email:</strong> info@birddropper.com</p>
+            <p><strong>Phone:</strong> (555) 123-4567</p>
+            <p><strong>Address:</strong> 123 Aviary Lane, Birdtown, BT 98765</p>
+        </div>
+    </section>
+</div></section>

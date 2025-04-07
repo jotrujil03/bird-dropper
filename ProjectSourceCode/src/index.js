@@ -77,6 +77,13 @@ app.get('/', (req, res) => {
   });
 });
 
+app.get('/about', (req, res) => {
+  res.render('pages/about', {
+    title: 'About'
+  });
+});
+
+
 // Login Routes
 app.get('/login', (req, res) => {
   res.render('pages/login', { title: 'Login' });

@@ -3,11 +3,13 @@
         <div class="container-fluid">
             <div class="row align-items-center">
                 <div class="col-6 col-md-5 d-flex justify-content-start align-items-center">
+                    <!-- About Button -->
                     <a class="text-reset me-3" href="/about">
-                        <i class="fas fa-info-circle" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+                        <i class="fas fa-info-circle" title="About" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
                     </a>
+                    <!-- Home Button -->
                     <a class="text-reset me-3" href="/social">
-                        <i class="fas fa-home" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+                        <i class="fas fa-home" title="Home" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
                     </a>
                 </div>
 
@@ -19,12 +21,12 @@
 
                 <div class="col-12 col-md-5 d-flex justify-content-end align-items-center">
                     <a class="text-reset me-3" href="/settings">
-                        <i class="fas fa-cog" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+                        <i class="fas fa-cog" title="Settings" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
                     </a>
 
                     <div class="dropdown">
                         <a class="text-reset me-3" href="/notifications" id="navbarDropdownMenuLink" role="button" data-mdb-dropdown-init aria-expanded="false">
-                            <i class="fas fa-bell" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;">
+                            <i class="fas fa-bell" title="Notifications" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;">
                                 {{#if notifications.length}}
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                         {{notifications.length}}
@@ -46,7 +48,7 @@
 
                     <div class="dropdown">
                         <a class="text-reset dropdown-toggle d-flex align-items-center hidden-arrow" href="#" id="userDropdown" role="button" data-mdb-dropdown-init aria-expanded="false">
-                            <i class="fas fa-user rounded-circle" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+                            <i class="fas fa-user rounded-circle" title="User" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="/profile">My profile</a></li>
@@ -62,18 +64,18 @@
 
 <style>
   .navbar-dark .nav-item .nav-link {
-  color: #000;
-}
+    color: #000;
+  }
 
-.navbar-dark .nav-item .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-  border-radius: 0.25rem;
-  color: #fff;
-}
+  .navbar-dark .nav-item .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    border-radius: 0.25rem;
+    color: #fff;
+  }
 
-.fa-li {
-  position: relative;
-  left: 0;
-}
+  .fa-li {
+    position: relative;
+    left: 0;
+  }
 </style>
