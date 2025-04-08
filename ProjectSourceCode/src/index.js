@@ -83,6 +83,12 @@ app.get('/about', (req, res) => {
   });
 });
 
+app.get('/social', (req, res) => {
+  res.render('pages/social', {
+    title: 'Social',
+    user: req.session.user
+  });
+});
 
 // Login Routes
 app.get('/login', (req, res) => {
