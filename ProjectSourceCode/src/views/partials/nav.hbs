@@ -1,65 +1,68 @@
 <header>
-    <div class="p-3 text-center bg-white border-bottom">
-        <div class="container-fluid">
-            <div class="row align-items-center">
-                <div class="col-6 col-md-5 d-flex justify-content-start align-items-center">
-                    <!-- About Button -->
-                    <a class="text-reset me-3" href="/about">
-                        <i class="fas fa-info-circle" title="About" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
-                    </a>
-                    <!-- Home Button -->
-                    <a class="text-reset me-3" href="/social">
-            <i class="fas fa-user" title="Social" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+  <div class="p-3 text-center bg-white border-bottom">
+    <div class="container-fluid">
+      <div class="row align-items-center">
+        <!-- Left side: About Us and Social -->
+        <div class="col-6 col-md-5 d-flex justify-content-start align-items-center">
+          <!-- About Us Button -->
+          <a class="text-reset me-3" href="/about" style="font-size: 1.2em; height: 40px; line-height: 40px; display: inline-block; text-decoration: none;">
+            About Us
+          </a>
+          <!-- Social Button -->
+          <a class="text-reset me-3" href="/social" style="font-size: 1.2em; height: 40px; line-height: 40px; display: inline-block; text-decoration: none;">
+            Social
           </a>
         </div>
 
-                <div class="col-6 col-md-2 text-center">
-                    <a href="/" class="ms-md-2" style="text-decoration: none; color: #000; font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; font-size: 1.5em; line-height: 40px; font-weight:bolder;">
-                        <i class="fas fa-dove" style="font-size: 25px; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
-                    </a>
-                </div>
-
-                <div class="col-12 col-md-5 d-flex justify-content-end align-items-center">
-                    <a class="text-reset me-3" href="/settings">
-                        <i class="fas fa-cog" title="Settings" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
-                    </a>
-
-                    <div class="dropdown">
-                        <a class="text-reset me-3" href="/notifications" id="navbarDropdownMenuLink" role="button" data-mdb-dropdown-init aria-expanded="false">
-                            <i class="fas fa-bell" title="Notifications" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;">
-                                {{#if notifications.length}}
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                        {{notifications.length}}
-                                        <span class="visually-hidden">unread messages</span>
-                                    </span>
-                                {{/if}}
-                            </i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
-                            {{#if notifications.length}}
-                                {{#each notifications}}
-                                    <li><a class="dropdown-item" href="/notifications">{{this.message}}</a></li>
-                                {{/each}}
-                            {{else}}
-                                <li><a class="dropdown-item" href="#">No new notifications</a></li>
-                            {{/if}}
-                        </ul>
-                    </div>
-
-                    <div class="dropdown">
-                        <a class="text-reset dropdown-toggle d-flex align-items-center hidden-arrow" href="#" id="userDropdown" role="button" data-mdb-dropdown-init aria-expanded="false">
-                            <i class="fas fa-user rounded-circle" title="User" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="/profile">My profile</a></li>
-                            <li><a class="dropdown-item" href="/settings">Settings</a></li>
-                            <li><a class="dropdown-item" href="/login">Login</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+        <!-- Center: Home/Dove icon remains unchanged -->
+        <div class="col-6 col-md-2 text-center">
+          <a href="/" class="ms-md-2" style="text-decoration: none; color: #000; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; font-size: 1.5em; line-height: 40px; font-weight: bolder;">
+            <i class="fas fa-dove" style="font-size: 25px; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+          </a>
         </div>
+
+        <!-- Right side: Other icons -->
+        <div class="col-12 col-md-5 d-flex justify-content-end align-items-center">
+          <a class="text-reset me-3" href="/settings">
+            <i class="fas fa-cog" title="Settings" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+          </a>
+
+          <div class="dropdown">
+            <a class="text-reset me-3" href="/notifications" id="navbarDropdownMenuLink" role="button" data-mdb-dropdown-init aria-expanded="false">
+              <i class="fas fa-bell" title="Notifications" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;">
+                {{#if notifications.length}}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{notifications.length}}
+                    <span class="visually-hidden">unread messages</span>
+                  </span>
+                {{/if}}
+              </i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
+              {{#if notifications.length}}
+                {{#each notifications}}
+                  <li><a class="dropdown-item" href="/notifications">{{this.message}}</a></li>
+                {{/each}}
+              {{else}}
+                <li><a class="dropdown-item" href="#">No new notifications</a></li>
+              {{/if}}
+            </ul>
+          </div>
+
+          <div class="dropdown">
+            <a class="text-reset dropdown-toggle d-flex align-items-center hidden-arrow" href="#" id="userDropdown" role="button" data-mdb-dropdown-init aria-expanded="false">
+              <i class="fas fa-user rounded-circle" title="User" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="/profile">My profile</a></li>
+              <li><a class="dropdown-item" href="/settings">Settings</a></li>
+              <li><a class="dropdown-item" href="/login">Login</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </header>
 
 <style>
@@ -72,10 +75,5 @@
     transition: all 0.3s ease;
     border-radius: 0.25rem;
     color: #fff;
-  }
-
-  .fa-li {
-    position: relative;
-    left: 0;
   }
 </style>
