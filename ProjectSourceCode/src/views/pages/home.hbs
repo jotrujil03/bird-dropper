@@ -192,34 +192,41 @@
     const input = form.querySelector("input[name='query']");
     const popularList = document.getElementById("popular-list");
 
-    const searchCounts = {}; // Stores: { "Blue Jay": 2, ... }
-
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
       e.preventDefault();
       const bird = input.value.trim();
       if (!bird) return;
 
-      // Track the search count
-      searchCounts[bird] = (searchCounts[bird] || 0) + 1;
+      try {
+        const res = await fetch("/track-search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ birdName: bird })
+        });
 
-      // Update popular list
-      const sorted = Object.entries(searchCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3); // top 3 only
+        const data = await res.json();
 
-      // Clear and re-render badges
-      popularList.innerHTML = '';
-      sorted.forEach(([name, count]) => {
-        const badge = document.createElement("span");
-        badge.className = "badge bg-light text-dark p-2";
-        badge.textContent = `${name} (${count})`;
-        popularList.appendChild(badge);
-      });
+        // Update UI with latest top 3
+        popularList.innerHTML = "";
+        data.top3.forEach(entry => {
+          const badge = document.createElement("span");
+          badge.className = "badge bg-light text-dark p-2";
+          badge.textContent = `${entry.name} (${entry.count})`;
+          popularList.appendChild(badge);
+        });
 
-      // Optional: display what was searched
-      document.getElementById("bird-result").innerHTML = `
-        <p class="text-muted">You searched for: <strong>${bird}</strong></p>
-      `;
+        // Show basic confirmation
+        document.getElementById("bird-result").innerHTML = `
+          <p class="text-muted">You searched for: <strong>${bird}</strong></p>
+        `;
+      } catch (err) {
+        console.error(err);
+        alert("Something went wrong.");
+      }
     });
   });
 </script>
+
+
