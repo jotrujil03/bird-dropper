@@ -199,6 +199,11 @@ app.get('/logout', (req, res) => {
   });
 });
 
+// Search Route
+app.get('/search', (req, res) => {
+  res.render('pages/search')
+});
+
 // Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
