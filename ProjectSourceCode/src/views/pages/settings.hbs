@@ -1,25 +1,60 @@
 {{> header}}
 
+<div class="container py-5">
+  <h1 class="mb-4">User Settings</h1>
 
-<style>
-  .page-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh; /* Ensure it takes at least the full viewport height */
-    width: 100%; /* Ensure it takes the full width */
-  }
 
-  .search-placeholder {
-    padding: 20px; /* Optional: Add some padding around the text */
-    border: 1px solid #ccc; /* Optional: Add a border for visual clarity */
-    border-radius: 5px; /* Optional: Add rounded corners */
-    background-color: #f9f9f9; /* Optional: Add a background color */
-  }
-</style>
+  <div class="card shadow-lg mb-4">
+    <div class="card-header bg-primary text-white">
+      <h4>Profile Information</h4>
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label"><strong>Email:</strong></label>
+        <p class="form-control-plaintext">{{user.email}}</p>
+      </div>
+    </div>
+  </div>
 
-<div class="page-center">
-  <div class="search-placeholder">Coming Soon</div>
+
+  <form method="POST" action="/update-username">
+    <div class="card shadow-lg mb-4">
+      <div class="card-header bg-info text-white">
+        <h4>Change Username</h4>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label for="username" class="form-label"><strong>Username:</strong></label>
+          <input type="text" id="username" name="username" class="form-control" value="{{user.username}}">
+        </div>
+        <button type="submit" class="btn btn-info">Update Username</button>
+      </div>
+    </div>
+  </form>
+
+
+  <form method="POST" action="/update-password">
+    <div class="card shadow-lg mb-4">
+      <div class="card-header bg-secondary text-white">
+        <h4>Change Password</h4>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label for="currentPassword" class="form-label"><strong>Current Password:</strong></label>
+          <input type="password" id="currentPassword" name="currentPassword" class="form-control" placeholder="Enter your current password">
+        </div>
+        <div class="mb-3">
+          <label for="newPassword" class="form-label"><strong>New Password:</strong></label>
+          <input type="password" id="newPassword" name="newPassword" class="form-control" placeholder="Enter your new password">
+        </div>
+        <div class="mb-3">
+          <label for="confirmPassword" class="form-label"><strong>Confirm New Password:</strong></label>
+          <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Confirm your new password">
+        </div>
+        <button type="submit" class="btn btn-secondary">Update Password</button>
+      </div>
+    </div>
+  </form>
 </div>
 
 {{> footer}}
