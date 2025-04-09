@@ -209,6 +209,32 @@ app.get('/settings', (req, res) => {
   res.render('pages/settings');
 });
 
+// Track popular bird searches (shared across all users)
+const fs = require("fs");
+const dataFile = path.join(__dirname, "../searchCounts.json");
+
+app.post("/track-search", (req, res) => {
+  const { birdName } = req.body;
+  if (!birdName) return res.status(400).json({ error: "Missing bird name" });
+
+  let data = {};
+  if (fs.existsSync(dataFile)) {
+    data = JSON.parse(fs.readFileSync(dataFile, "utf8"));
+  }
+
+  data[birdName] = (data[birdName] || 0) + 1;
+
+  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+
+  const top3 = Object.entries(data)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([name, count]) => ({ name, count }));
+
+  res.json({ top3 });
+});
+
+
 // Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
