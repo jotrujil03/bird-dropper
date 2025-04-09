@@ -1,60 +1,96 @@
 {{> header}}
 
 <div class="container py-5">
-  <h1 class="mb-4">User Settings</h1>
-
+  <h1 class="mb-4">Settings</h1>
 
   <div class="card shadow-lg mb-4">
-    <div class="card-header bg-primary text-white">
-      <h4>Profile Information</h4>
+    <div class="card-header bg-secondary text-white">
+      <h4>Website Settings</h4>
     </div>
     <div class="card-body">
-      <div class="mb-3">
-        <label class="form-label"><strong>Email:</strong></label>
-        <p class="form-control-plaintext">{{user.email}}</p>
-      </div>
+      <form id="websiteSettingsForm">
+        <div class="mb-3">
+          <label for="theme" class="form-label"><strong>Theme:</strong></label>
+          <select class="form-select" id="theme" name="theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="system">System Default</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="language" class="form-label"><strong>Language:</strong></label>
+          <select class="form-select" id="language" name="language">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Save Website Settings</button>
+        <div id="websiteSettingsMessage" class="mt-2"></div>
+      </form>
     </div>
   </div>
 
-
-  <form method="POST" action="/update-username">
+  {{#if user}}
+    <h2>User Settings</h2>
     <div class="card shadow-lg mb-4">
-      <div class="card-header bg-info text-white">
-        <h4>Change Username</h4>
+      <div class="card-header bg-primary text-white">
+        <h4>Profile Information</h4>
       </div>
       <div class="card-body">
         <div class="mb-3">
-          <label for="username" class="form-label"><strong>Username:</strong></label>
-          <input type="text" id="username" name="username" class="form-control" value="{{user.username}}">
+          <label class="form-label"><strong>Email:</strong></label>
+          <p class="form-control-plaintext">{{user.email}}</p>
         </div>
-        <button type="submit" class="btn btn-info">Update Username</button>
       </div>
     </div>
-  </form>
 
+    <form method="POST" action="/update-username">
+      </form>
 
-  <form method="POST" action="/update-password">
-    <div class="card shadow-lg mb-4">
-      <div class="card-header bg-secondary text-white">
-        <h4>Change Password</h4>
-      </div>
-      <div class="card-body">
-        <div class="mb-3">
-          <label for="currentPassword" class="form-label"><strong>Current Password:</strong></label>
-          <input type="password" id="currentPassword" name="currentPassword" class="form-control" placeholder="Enter your current password">
-        </div>
-        <div class="mb-3">
-          <label for="newPassword" class="form-label"><strong>New Password:</strong></label>
-          <input type="password" id="newPassword" name="newPassword" class="form-control" placeholder="Enter your new password">
-        </div>
-        <div class="mb-3">
-          <label for="confirmPassword" class="form-label"><strong>Confirm New Password:</strong></label>
-          <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Confirm your new password">
-        </div>
-        <button type="submit" class="btn btn-secondary">Update Password</button>
-      </div>
+    <form method="POST" action="/update-password">
+      </form>
+  {{else}}
+    <h2>User Settings</h2>
+    <div class="alert alert-info" role="alert">
+      You need to be logged in to view and change your personal settings. <a href="/login" class="alert-link">Log in here</a>.
     </div>
-  </form>
+  {{/if}}
+
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const websiteSettingsForm = document.getElementById('websiteSettingsForm');
+    const websiteSettingsMessage = document.getElementById('websiteSettingsMessage');
+
+    if (websiteSettingsForm) {
+      websiteSettingsForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // Prevent default form submission
+
+        const formData = new FormData(websiteSettingsForm);
+        const data = {};
+        formData.forEach((value, key) => {
+          data[key] = value;
+        });
+
+        try {
+          const response = await fetch('/settings/website', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          });
+          const result = await response.json();
+          websiteSettingsMessage.textContent = result.message || result.error || 'Settings saved.';
+        } catch (error) {
+          console.error('Error:', error);
+          websiteSettingsMessage.textContent = 'Failed to save settings.';
+        }
+      });
+    }
+  });
+</script>
 
 {{> footer}}

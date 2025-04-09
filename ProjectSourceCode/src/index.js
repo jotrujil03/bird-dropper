@@ -13,6 +13,11 @@ const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: path.join(__dirname, 'views/layouts'),
   partialsDir: path.join(__dirname, 'views/partials'),
+  helpers: {
+    ifEquals: function(arg1, arg2, options) {
+      return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
+    }
+  }
 });
 
 app.engine('hbs', hbs.engine);
@@ -51,57 +56,39 @@ db.connect()
   .then(obj => {
     console.log('Database connection successful');
     obj.done();
+
+    async function createAdminUser() {
+      const adminEmail = 'admin@admin.com';
+      const adminUsername = 'admin';
+      const adminPassword = process.env.ADMIN_PASSWORD;
+
+      try {
+        const existingAdmin = await db.oneOrNone('SELECT student_id FROM students WHERE email = $1', [adminEmail]);
+
+        if (!existingAdmin) {
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(adminPassword, salt);
+
+          const newAdmin = await db.one(`
+            INSERT INTO students (first_name, last_name, email, username, password)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING student_id
+          `, ['Admin', 'User', adminEmail, adminUsername, hashedPassword]);
+
+          console.log('Admin user created successfully:', newAdmin.student_id);
+        } else {
+          console.log('Admin user already exists.');
+        }
+      } catch (error) {
+        console.error('Error creating admin user:', error);
+      }
+    }
+
+    createAdminUser();
   })
   .catch(error => {
     console.log('ERROR:', error.message || error);
   });
-
-// Registration Routes (existing, unchanged)
-app.get('/register', (req, res) => {
-  res.render('pages/register', { title: 'Register' });
-});
-
-app.post('/register', async (req, res) => {
-  const { first_name, last_name, email, username, password, confirm_password } = req.body;
-  const formData = { first_name, last_name, email, username };
-
-  if (password !== confirm_password) {
-    return res.render('pages/register', {
-      title: 'Register',
-      error: 'Passwords do not match',
-      formData
-    });
-  }
-
-  try {
-    const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = bcrypt.hashSync(password, salt);
-
-    const newUser = await db.one(`
-      INSERT INTO students 
-      (first_name, last_name, email, username, password) 
-      VALUES ($1, $2, $3, $4, $5) 
-      RETURNING student_id, username, email, first_name, last_name
-    `, [first_name, last_name, email, username, hashedPassword]);
-
-    req.session.user = {
-      id: newUser.student_id,
-      username: newUser.username,
-      email: newUser.email,
-      first_name: newUser.first_name,
-      last_name: newUser.last_name
-    };
-
-    res.redirect('/profile');
-  } catch (err) {
-    let error = 'Registration failed. Please try again.';
-    if (err.code === '23505') {
-      if (err.constraint === 'students_email_key') error = 'Email already in use';
-      if (err.constraint === 'students_username_key') error = 'Username already taken';
-    }
-    res.render('pages/register', { title: 'Register', error, formData });
-  }
-});
 
 // Registration Routes (existing, unchanged)
 app.get('/register', (req, res) => {
@@ -165,11 +152,29 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.get('/', (req, res) => {
-  res.render('pages/home', {
-    title: 'Home',
-    user: req.session.user
-  });
+app.get('/', async (req, res) => {
+  try {
+    const websiteSettings = await db.oneOrNone('SELECT theme, language FROM website_settings WHERE id = 1');
+    const theme = websiteSettings ? websiteSettings.theme : 'light'; // Default if not found
+    const language = websiteSettings ? websiteSettings.language : 'en'; // Default if not found
+
+    res.render('pages/home', {
+      title: 'Home',
+      user: req.session.user,
+      theme: theme,
+      language: language,
+      // ... other data you might be passing
+    });
+  } catch (error) {
+    console.error('Error fetching website settings:', error);
+    res.render('pages/home', {
+      title: 'Home',
+      user: req.session.user,
+      theme: 'light', // Fallback default
+      language: 'en',  // Fallback default
+      // ... other data
+    });
+  }
 });
 
 // Login Routes
@@ -222,6 +227,21 @@ app.get('/profile', auth, (req, res) => {
   });
 });
 
+// Settings Route
+app.get('/settings', (req, res) => {
+  res.render('pages/settings', {
+    title: 'Settings'
+    //user: req.session.user
+  })
+});
+
+// Search Route
+app.get('/search', (req, res) => {
+  res.render('pages/search', {
+    title: 'Search'
+  })
+});
+
 // Logout Route
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
@@ -229,6 +249,60 @@ app.get('/logout', (req, res) => {
     res.clearCookie('connect.sid');
     res.redirect('/');
   });
+});
+
+// API endpoint for saving website settings (anonymous access)
+app.post('/settings/website', async (req, res) => {
+  const { theme, language } = req.body;
+
+  try {
+    await db.none(`
+      UPDATE website_settings
+      SET theme = $1, language = $2
+      WHERE id = 1 -- Assuming you only have one row for global settings
+    `, [theme, language]);
+
+    console.log('Website settings saved:', { theme, language });
+    res.json({ message: 'Website settings saved successfully' });
+  } catch (error) {
+    console.error('Error saving website settings:', error);
+    res.status(500).json({ error: 'Failed to save website settings' });
+  }
+});
+
+// API endpoint for saving user-specific settings (requires login)
+app.post('/settings/user', auth, async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Unauthorized' }); // Should be handled by auth middleware, but good to double-check
+  }
+
+  const userId = req.session.user.id;
+  // Extract user-specific settings from the request body
+  const { notifications, timezone } = req.body;
+
+  try {
+    // Logic to save user-specific settings to the database
+    const updateUserSettings = await db.none(`
+      UPDATE students
+      SET notifications = $2, timezone = $3
+      WHERE student_id = $1
+    `, [userId, notifications === 'on', timezone]); // Assuming 'notifications' is a checkbox
+
+    res.json({ message: 'User settings saved successfully' });
+  } catch (error) {
+    console.error('Error saving user settings:', error);
+    res.status(500).json({ error: 'Failed to save user settings' });
+  }
+});
+
+// Social Route
+app.get('/social', (req, res) => {
+  res.render('pages/social')
+});
+
+// About Route
+app.get('/about', (req, res) => {
+  res.render('pages/social')
 });
 
 // Start Server
