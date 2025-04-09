@@ -1,4 +1,3 @@
-CREATE DATABASE IF NOT EXISTS users_db;
 \c users_db;
 
 CREATE TABLE IF NOT EXISTS students (
