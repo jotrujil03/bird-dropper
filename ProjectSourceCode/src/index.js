@@ -158,7 +158,7 @@ app.post('/register', async (req, res) => {
     const hashedPassword = bcrypt.hashSync(password, salt);
 
     const newUser = await db.one(`
-      INSERT INTO students 
+      INSERT INTO users 
       (first_name, last_name, email, username, password_hash) 
       VALUES ($1, $2, $3, $4, $5) 
       RETURNING student_id, username, email, first_name, last_name
