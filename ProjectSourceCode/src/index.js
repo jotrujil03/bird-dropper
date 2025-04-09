@@ -90,6 +90,10 @@ app.get('/social', (req, res) => {
   });
 });
 
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
+
 // Login Routes
 app.get('/login', (req, res) => {
   res.render('pages/login', { title: 'Login' });
