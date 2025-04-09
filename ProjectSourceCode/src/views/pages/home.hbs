@@ -184,49 +184,6 @@
 </html>
 
 
-<!-- JS For popular searches -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const form = document.getElementById("search-form");
-    const input = form.querySelector("input[name='query']");
-    const popularList = document.getElementById("popular-list");
 
-    form.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const bird = input.value.trim();
-      if (!bird) return;
-
-      try {
-        const res = await fetch("/track-search", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ birdName: bird })
-        });
-
-        const data = await res.json();
-
-        // Update UI with latest top 3
-        popularList.innerHTML = "";
-        data.top3.forEach(entry => {
-          const badge = document.createElement("span");
-          badge.className = "badge bg-light text-dark p-2";
-          badge.textContent = `${entry.name} (${entry.count})`;
-          popularList.appendChild(badge);
-        });
-
-        // Show basic confirmation
-        document.getElementById("bird-result").innerHTML = `
-          <p class="text-muted">You searched for: <strong>${bird}</strong></p>
-        `;
-      } catch (err) {
-        console.error(err);
-        alert("Something went wrong.");
-      }
-    });
-  });
-</script>
 
 
