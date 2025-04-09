@@ -302,7 +302,7 @@ app.get('/social', (req, res) => {
 
 // About Route
 app.get('/about', (req, res) => {
-  res.render('pages/social')
+  res.render('pages/about')
 });
 
 // Start Server

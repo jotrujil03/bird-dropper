@@ -14,7 +14,6 @@
           <select class="form-select" id="theme" name="theme">
             <option value="light">Light</option>
             <option value="dark">Dark</option>
-            <option value="system">System Default</option>
           </select>
         </div>
         <div class="mb-3">
@@ -45,11 +44,45 @@
       </div>
     </div>
 
-    <form method="POST" action="/update-username">
-      </form>
+    <form id="usernameForm">
+      <div class="card shadow-lg mb-4">
+        <div class="card-header bg-info text-white">
+          <h4>Change Username</h4>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="username" class="form-label"><strong>Username:</strong></label>
+            <input type="text" id="username" name="username" class="form-control" value="{{user.username}}">
+          </div>
+          <button type="submit" class="btn btn-info">Update Username</button>
+          <div id="usernameMessage" class="mt-2"></div>
+        </div>
+      </div>
+    </form>
 
-    <form method="POST" action="/update-password">
-      </form>
+    <form id="passwordForm">
+      <div class="card shadow-lg mb-4">
+        <div class="card-header bg-secondary text-white">
+          <h4>Change Password</h4>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="currentPassword" class="form-label"><strong>Current Password:</strong></label>
+            <input type="password" id="currentPassword" name="currentPassword" class="form-control" placeholder="Enter your current password">
+          </div>
+          <div class="mb-3">
+            <label for="newPassword" class="form-label"><strong>New Password:</strong></label>
+            <input type="password" id="newPassword" name="newPassword" class="form-control" placeholder="Enter your new password">
+          </div>
+          <div class="mb-3">
+            <label for="confirmPassword" class="form-label"><strong>Confirm New Password:</strong></label>
+            <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Confirm your new password">
+          </div>
+          <button type="submit" class="btn btn-secondary">Update Password</button>
+          <div id="passwordMessage" class="mt-2"></div>
+        </div>
+      </div>
+    </form>
   {{else}}
     <h2>User Settings</h2>
     <div class="alert alert-info" role="alert">
@@ -61,12 +94,13 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
+    // Website Settings Form Submission
     const websiteSettingsForm = document.getElementById('websiteSettingsForm');
     const websiteSettingsMessage = document.getElementById('websiteSettingsMessage');
 
     if (websiteSettingsForm) {
       websiteSettingsForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Prevent default form submission
+        event.preventDefault();
 
         const formData = new FormData(websiteSettingsForm);
         const data = {};
@@ -83,10 +117,86 @@
             body: JSON.stringify(data),
           });
           const result = await response.json();
+          websiteSettingsMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
           websiteSettingsMessage.textContent = result.message || result.error || 'Settings saved.';
         } catch (error) {
-          console.error('Error:', error);
-          websiteSettingsMessage.textContent = 'Failed to save settings.';
+          console.error('Error saving website settings:', error);
+          websiteSettingsMessage.className = 'alert alert-danger mt-2';
+          websiteSettingsMessage.textContent = 'An unexpected error occurred.';
+        }
+      });
+    }
+
+    // Username Form Submission
+    const usernameForm = document.getElementById('usernameForm');
+    const usernameMessage = document.getElementById('usernameMessage');
+
+    if (usernameForm) {
+      usernameForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(usernameForm);
+        const data = {};
+        formData.forEach((value, key) => {
+          data[key] = value;
+        });
+
+        try {
+          const response = await fetch('/update-username', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          });
+          const result = await response.json(); // Assuming your /update-username returns JSON
+          usernameMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
+          usernameMessage.textContent = result.message || result.error || 'Username updated.';
+          // Optionally update the displayed username
+          if (response.ok && result.username) {
+            // You might need to reload or update the DOM accordingly
+          }
+        } catch (error) {
+          console.error('Error updating username:', error);
+          usernameMessage.className = 'alert alert-danger mt-2';
+          usernameMessage.textContent = 'Failed to update username.';
+        }
+      });
+    }
+
+    // Password Form Submission
+    const passwordForm = document.getElementById('passwordForm');
+    const passwordMessage = document.getElementById('passwordMessage');
+
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(passwordForm);
+        const data = {};
+        formData.forEach((value, key) => {
+          data[key] = value;
+        });
+
+        try {
+          const response = await fetch('/update-password', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          });
+          const result = await response.json(); // Assuming your /update-password returns JSON
+          passwordMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
+          passwordMessage.textContent = result.message || result.error || 'Password updated.';
+          // Optionally clear the password fields
+          if (response.ok) {
+            passwordForm.reset();
+          }
+        } catch (error) {
+          console.error('Error updating password:', error);
+          passwordMessage.className = 'alert alert-danger mt-2';
+          passwordMessage.textContent = 'Failed to update password.';
         }
       });
     }
