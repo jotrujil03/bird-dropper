@@ -56,6 +56,100 @@ db.connect()
     console.log('ERROR:', error.message || error);
   });
 
+// Registration Routes (existing, unchanged)
+app.get('/register', (req, res) => {
+  res.render('pages/register', { title: 'Register' });
+});
+
+app.post('/register', async (req, res) => {
+  const { first_name, last_name, email, username, password, confirm_password } = req.body;
+  const formData = { first_name, last_name, email, username };
+
+  if (password !== confirm_password) {
+    return res.render('pages/register', {
+      title: 'Register',
+      error: 'Passwords do not match',
+      formData
+    });
+  }
+
+  try {
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPassword = bcrypt.hashSync(password, salt);
+
+    const newUser = await db.one(`
+      INSERT INTO students 
+      (first_name, last_name, email, username, password) 
+      VALUES ($1, $2, $3, $4, $5) 
+      RETURNING student_id, username, email, first_name, last_name
+    `, [first_name, last_name, email, username, hashedPassword]);
+
+    req.session.user = {
+      id: newUser.student_id,
+      username: newUser.username,
+      email: newUser.email,
+      first_name: newUser.first_name,
+      last_name: newUser.last_name
+    };
+
+    res.redirect('/profile');
+  } catch (err) {
+    let error = 'Registration failed. Please try again.';
+    if (err.code === '23505') {
+      if (err.constraint === 'students_email_key') error = 'Email already in use';
+      if (err.constraint === 'students_username_key') error = 'Username already taken';
+    }
+    res.render('pages/register', { title: 'Register', error, formData });
+  }
+});
+
+// Registration Routes (existing, unchanged)
+app.get('/register', (req, res) => {
+  res.render('pages/register', { title: 'Register' });
+});
+
+app.post('/register', async (req, res) => {
+  const { first_name, last_name, email, username, password, confirm_password } = req.body;
+  const formData = { first_name, last_name, email, username };
+
+  if (password !== confirm_password) {
+    return res.render('pages/register', {
+      title: 'Register',
+      error: 'Passwords do not match',
+      formData
+    });
+  }
+
+  try {
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPassword = bcrypt.hashSync(password, salt);
+
+    const newUser = await db.one(`
+      INSERT INTO students 
+      (first_name, last_name, email, username, password) 
+      VALUES ($1, $2, $3, $4, $5) 
+      RETURNING student_id, username, email, first_name, last_name
+    `, [first_name, last_name, email, username, hashedPassword]);
+
+    req.session.user = {
+      id: newUser.student_id,
+      username: newUser.username,
+      email: newUser.email,
+      first_name: newUser.first_name,
+      last_name: newUser.last_name
+    };
+
+    res.redirect('/profile');
+  } catch (err) {
+    let error = 'Registration failed. Please try again.';
+    if (err.code === '23505') {
+      if (err.constraint === 'students_email_key') error = 'Email already in use';
+      if (err.constraint === 'students_username_key') error = 'Username already taken';
+    }
+    res.render('pages/register', { title: 'Register', error, formData });
+  }
+});
+
 // Middleware
 const auth = (req, res, next) => {
   if (!req.session.user) {
@@ -88,12 +182,12 @@ app.post('/login', async (req, res) => {
   
   try {
     const user = await db.oneOrNone(`
-      SELECT student_id, email, username, first_name, last_name, password_hash 
+      SELECT student_id, email, username, first_name, last_name, password 
       FROM students 
       WHERE email = $1
     `, [email]);
     
-    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    if (!user || !bcrypt.compareSync(password, user.password)) {
       return res.render('pages/login', {
         title: 'Login',
         error: 'Invalid email or password',
@@ -120,7 +214,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Registration Routes
+// Registration Routes (existing, unchanged)
 app.get('/register', (req, res) => {
   res.render('pages/register', { title: 'Register' });
 });
