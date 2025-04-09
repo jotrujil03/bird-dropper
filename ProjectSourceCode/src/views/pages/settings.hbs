@@ -1,30 +1,25 @@
 {{> header}}
 
 
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-      <div class="card shadow-lg">
-        <div class="card-header bg-primary text-white">
-          <h2>User Settings</h2>
-        </div>
-        <div class="card-body">
-          <div class="mb-3">
-            <label class="form-label"><strong>Username:</strong></label>
-            <p class="form-control-plaintext">{{user.username}}</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label"><strong>Password:</strong></label>
-            <p class="form-control-plaintext">{{user.password}}</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label"><strong>Email:</strong></label>
-            <p class="form-control-plaintext">{{user.email}}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<style>
+  .page-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Ensure it takes at least the full viewport height */
+    width: 100%; /* Ensure it takes the full width */
+  }
+
+  .search-placeholder {
+    padding: 20px; /* Optional: Add some padding around the text */
+    border: 1px solid #ccc; /* Optional: Add a border for visual clarity */
+    border-radius: 5px; /* Optional: Add rounded corners */
+    background-color: #f9f9f9; /* Optional: Add a background color */
+  }
+</style>
+
+<div class="page-center">
+  <div class="search-placeholder">Coming Soon</div>
 </div>
 
 {{> footer}}
