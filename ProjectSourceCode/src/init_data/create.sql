@@ -3,7 +3,7 @@ CREATE DATABASE IF NOT EXISTS users_db;
 \c users_db;
 
 -- Create the students table if it doesn't exist
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS students (
     student_id SERIAL PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
