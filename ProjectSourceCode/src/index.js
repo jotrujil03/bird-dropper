@@ -214,53 +214,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Registration Routes (existing, unchanged)
-app.get('/register', (req, res) => {
-  res.render('pages/register', { title: 'Register' });
-});
-
-app.post('/register', async (req, res) => {
-  const { first_name, last_name, email, username, password, confirm_password } = req.body;
-  const formData = { first_name, last_name, email, username };
-
-  if (password !== confirm_password) {
-    return res.render('pages/register', {
-      title: 'Register',
-      error: 'Passwords do not match',
-      formData
-    });
-  }
-
-  try {
-    const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = bcrypt.hashSync(password, salt);
-
-    const newUser = await db.one(`
-      INSERT INTO students 
-      (first_name, last_name, email, username, password_hash) 
-      VALUES ($1, $2, $3, $4, $5) 
-      RETURNING student_id, username, email, first_name, last_name
-    `, [first_name, last_name, email, username, hashedPassword]);
-
-    req.session.user = {
-      id: newUser.student_id,
-      username: newUser.username,
-      email: newUser.email,
-      first_name: newUser.first_name,
-      last_name: newUser.last_name
-    };
-
-    res.redirect('/profile');
-  } catch (err) {
-    let error = 'Registration failed. Please try again.';
-    if (err.code === '23505') {
-      if (err.constraint === 'students_email_key') error = 'Email already in use';
-      if (err.constraint === 'students_username_key') error = 'Username already taken';
-    }
-    res.render('pages/register', { title: 'Register', error, formData });
-  }
-});
-
 // Profile Route
 app.get('/profile', auth, (req, res) => {
   res.render('pages/profile', {
