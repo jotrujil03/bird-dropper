@@ -30,7 +30,8 @@ app.use(
     resave: false,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 86400000 // 1 day
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      httpOnly: true
     }
   })
 );
@@ -77,23 +78,6 @@ app.get('/', (req, res) => {
   });
 });
 
-app.get('/about', (req, res) => {
-  res.render('pages/about', {
-    title: 'About'
-  });
-});
-
-app.get('/social', (req, res) => {
-  res.render('pages/social', {
-    title: 'Social',
-    user: req.session.user
-  });
-});
-
-app.get('/welcome', (req, res) => {
-  res.json({status: 'success', message: 'Welcome!'});
-});
-
 // Login Routes
 app.get('/login', (req, res) => {
   res.render('pages/login', { title: 'Login' });
@@ -136,7 +120,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Registration Routes (existing, unchanged)
+// Registration Routes
 app.get('/register', (req, res) => {
   res.render('pages/register', { title: 'Register' });
 });
@@ -195,21 +179,10 @@ app.get('/profile', auth, (req, res) => {
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) console.log('Session destruction error:', err);
+    res.clearCookie('connect.sid');
     res.redirect('/');
   });
 });
-
-// Search Route
-app.get('/search', (req, res) => {
-  res.render('pages/search');
-});
-
-// Settings Route
-app.get('/settings', (req, res) => {
-  res.render('pages/settings');
-});
-
-
 
 // Start Server
 const PORT = process.env.PORT || 3000;
