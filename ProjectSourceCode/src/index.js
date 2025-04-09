@@ -201,7 +201,12 @@ app.get('/logout', (req, res) => {
 
 // Search Route
 app.get('/search', (req, res) => {
-  res.render('pages/search')
+  res.render('pages/search');
+});
+
+// Settings Route
+app.get('/settings', (req, res) => {
+  res.render('pages/settings');
 });
 
 // Start Server
