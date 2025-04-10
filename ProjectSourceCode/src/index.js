@@ -16,6 +16,9 @@ const hbs = handlebars.create({
   helpers: {
     ifEquals: function(arg1, arg2, options) {
       return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
+    },
+    eq: function(arg1, arg2) { // Add the 'eq' helper here
+      return (arg1 == arg2);
     }
   }
 });
@@ -282,7 +285,7 @@ app.post('/settings/website', async (req, res) => {
 
 app.post('/update-profile-image', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.session.userId;
     const { profileImage } = req.body;
 
     await db.query('UPDATE students SET profile_photo = $1 WHERE student_id = $2', [profileImage, userId]);
