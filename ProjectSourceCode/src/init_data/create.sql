@@ -20,3 +20,4 @@ CREATE TABLE IF NOT EXISTS website_settings (
 
 -- Insert an initial row if the table is empty
 INSERT INTO website_settings (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM website_settings);
+

@@ -221,9 +221,17 @@ app.post('/login', async (req, res) => {
 
 // Profile Route
 app.get('/profile', auth, (req, res) => {
+  // Retrieve the user from session
+  const user = req.session.user;
+
+  // Assign a default profile image if not available
+  const profileImage = user.profileImage ? user.profileImage : '/images/cardinal-bird-branch.jpg';
+
+  // Render the profile page with the title, user data, and profileImage
   res.render('pages/profile', {
     title: 'Your Profile',
-    user: req.session.user
+    user,
+    profileImage
   });
 });
 
@@ -267,6 +275,21 @@ app.post('/settings/website', async (req, res) => {
   } catch (error) {
     console.error('Error saving website settings:', error);
     res.status(500).json({ error: 'Failed to save website settings' });
+  }
+});
+app.post('/update-profile-image', async (req, res) => {
+  try {
+    // Assuming you store the user id in the session:
+    const userId = req.session.userId;
+    const { profileImage } = req.body;
+
+    // Update the user's profile_photo field in the database.
+    await pool.query('UPDATE students SET profile_photo = $1 WHERE student_id = $2', [profileImage, userId]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating profile picture:', err);
+    res.json({ success: false, error: 'Failed to update profile picture.' });
   }
 });
 
