@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS students (
     email VARCHAR(100) UNIQUE NOT NULL,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
-    profile_photo VARCHAR(255)
+    bio TEXT, 
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
@@ -21,3 +21,4 @@ CREATE TABLE IF NOT EXISTS website_settings (
 
 -- Insert an initial row if the table is empty
 INSERT INTO website_settings (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM website_settings);
+

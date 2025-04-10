@@ -5,72 +5,87 @@
     <div class="col-md-8 col-lg-6">
       <div class="card shadow-lg rounded-3">
         <div class="card-header bg-primary text-white text-center rounded-top">
-          <h2 class="mb-0">Edit Your Profile</h2>
+          <h2 class="mb-0">Your Profile</h2>
         </div>
         <div class="card-body text-center px-4 py-5">
-          
-          <!-- Profile image display -->
+
+          <!-- Profile image -->
           {{#if profileImage}}
             <img src="{{profileImage}}" class="rounded-circle shadow-lg border border-3 border-primary mb-4" alt="Profile Picture" width="140" height="140">
           {{else}}
             <img src="/images/cardinal-bird-branch.jpg" class="rounded-circle shadow-lg border border-3 border-primary mb-4" alt="Default Profile Picture" width="140" height="140">
           {{/if}}
-          
-          <form action="/edit-profile" method="POST">
-            <!-- Bio Field -->
-            <div class="mb-4 text-start">
-              <label for="bio" class="form-label text-muted"><strong>Bio</strong></label>
-              <textarea class="form-control" id="bio" name="bio" rows="3">{{bio}}</textarea>
-            </div>
-            
-            <!-- Favorite Bird Field -->
-            <div class="mb-4 text-start">
-              <label for="favoriteBird" class="form-label text-muted"><strong>Favorite Bird</strong></label>
-              <input type="text" class="form-control" id="favoriteBird" name="favoriteBird" value="{{favoriteBird}}" placeholder="e.g. Northern Cardinal">
-            </div>
-            
-            <!-- Region Dropdown -->
-            <div class="mb-4 text-start">
-              <label for="region" class="form-label text-muted"><strong>Region</strong></label>
-              <select class="form-select" id="region" name="region">
-                <option value="" {{#unless region}}selected{{/unless}}>Select your continent</option>
-                <option value="Africa" {{#eq region "Africa"}}selected{{/eq}}>Africa</option>
-                <option value="Antarctica" {{#eq region "Antarctica"}}selected{{/eq}}>Antarctica</option>
-                <option value="Asia" {{#eq region "Asia"}}selected{{/eq}}>Asia</option>
-                <option value="Europe" {{#eq region "Europe"}}selected{{/eq}}>Europe</option>
-                <option value="North America" {{#eq region "North America"}}selected{{/eq}}>North America</option>
-                <option value="Oceania" {{#eq region "Oceania"}}selected{{/eq}}>Oceania</option>
-                <option value="South America" {{#eq region "South America"}}selected{{/eq}}>South America</option>
-              </select>
-              <div class="form-text">Help us show you local birds</div>
-            </div>
-            
-            <!-- Read-only user details -->
-            <div class="mb-3 text-start">
+
+          <!-- Display Bio Section -->
+          <div id="bio-display">
+            <h5 class="text-muted">Bio</h5>
+            {{#if bio}}
+              <p id="bio-text" class="fs-5">{{bio}}</p>
+            {{else}}
+              <p id="bio-text" class="fs-5 text-muted">No bio yet.</p>
+            {{/if}}
+            <button id="edit-bio-button" class="btn btn-primary">Edit</button>
+          </div>
+
+          <!-- Edit Bio Form (initially hidden) -->
+          <div id="bio-edit-form" style="display:none;">
+            <form action="/edit-profile" method="POST">
+              <div class="mb-4 text-start">
+                <label for="bio" class="form-label text-muted"><strong>Bio</strong></label>
+                <textarea class="form-control" id="bio" name="bio" rows="5">{{bio}}</textarea>
+              </div>
+              <div class="d-grid gap-2 d-md-flex justify-content-center">
+                <button type="submit" class="btn btn-success">Save</button>
+                <button type="button" id="cancel-edit-button" class="btn btn-secondary">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="mb-4 text-start">
+            <label for="favoriteBird" class="form-label text-muted"><strong>Favorite Bird</strong></label>
+            <input type="text" class="form-control" id="favoriteBird" name="favoriteBird" value="{{favoriteBird}}" placeholder="e.g. Northern Cardinal">
+          </div>
+
+          <!-- Other profile information (read-only) -->
+          <div class="mt-5 text-start">
+            <div class="mb-3">
               <label class="form-label text-muted"><strong>Email</strong></label>
               <p class="fs-5">{{user.email}}</p>
             </div>
-            
-            <div class="mb-3 text-start">
+            <div class="mb-3">
               <label class="form-label text-muted"><strong>Username</strong></label>
               <p class="fs-5">{{user.username}}</p>
             </div>
-            
-            <div class="mb-4 text-start">
+            <div class="mb-3">
               <label class="form-label text-muted"><strong>Member Since</strong></label>
               <p class="fs-5">{{user.created_at}}</p>
             </div>
-            
-            <div class="d-grid gap-2 d-md-flex justify-content-center">
+          </div>
+              <div class="d-grid gap-2 d-md-flex justify-content-center">
               <button type="submit" class="btn btn-primary btn-lg px-4">Save Profile</button>
               <a href="/profile" class="btn btn-outline-secondary btn-lg px-4">Cancel</a>
             </div>
           </form>
-          
+
+
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  // Show the edit form when "Edit" button is clicked
+  document.getElementById('edit-bio-button').addEventListener('click', () => {
+    document.getElementById('bio-display').style.display = 'none';
+    document.getElementById('bio-edit-form').style.display = 'block';
+  });
+
+  // Hide the edit form when "Cancel" button is clicked
+  document.getElementById('cancel-edit-button').addEventListener('click', () => {
+    document.getElementById('bio-edit-form').style.display = 'none';
+    document.getElementById('bio-display').style.display = 'block';
+  });
+</script>
 
 {{> footer}}

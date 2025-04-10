@@ -224,22 +224,64 @@ app.post('/login', async (req, res) => {
 });
 
 // Profile Route
-app.get('/profile', auth, (req, res) => {
-  // Retrieve the user from session
-  const user = req.session.user;
+app.get('/profile', auth, async (req, res) => {
+  try {
+    // Fetch the complete user data, including the bio
+    const student = await db.one(
+      'SELECT student_id, first_name, last_name, email, username, bio, created_at FROM students WHERE student_id = $1',
+      [req.session.user.id]
+    );
 
-  // Assign a default profile image to the session if not already there
-  if (!user.profileImage) {
-    req.session.user.profileImage = '/images/cardinal-bird-branch.jpg';
+    // Optionally update the session with the fetched bio
+    req.session.user.bio = student.bio;
+
+    // Assign a default profile image if not available
+    const profileImage = req.session.user.profileImage 
+      ? req.session.user.profileImage 
+      : '/images/cardinal-bird-branch.jpg';
+
+    // Render the profile page with student data (including bio)
+    res.render('pages/profile', {
+      title: 'Your Profile',
+      user: student,
+      profileImage,
+      bio: student.bio
+    });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+
+    // Fallback: render the profile page using session data, with an error message
+    const profileImage = req.session.user.profileImage 
+      ? req.session.user.profileImage 
+      : '/images/cardinal-bird-branch.jpg';
+
+    res.render('pages/profile', {
+      title: 'Your Profile',
+      user: req.session.user,
+      profileImage,
+      error: 'Unable to load profile data'
+    });
   }
-
-  // Render the profile page with the title and user data
-  res.render('pages/profile', {
-    title: 'Your Profile',
-    user
-  });
 });
 
+app.post('/edit-profile', auth, async (req, res) => {
+  console.log("POST /edit-profile route reached"); // Debug log
+  const { bio } = req.body;
+  const userId = req.session.user.id;
+
+  try {
+    await db.none('UPDATE students SET bio = $1 WHERE student_id = $2', [bio, userId]);
+    req.session.user.bio = bio;
+    res.redirect('/profile');
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.render('pages/profile', {
+      title: 'Your Profile',
+      user: req.session.user,
+      error: 'Failed to update your profile. Please try again.'
+    });
+  }
+});
 // Settings Route
 app.get('/settings', (req, res) => {
   res.render('pages/settings', {
