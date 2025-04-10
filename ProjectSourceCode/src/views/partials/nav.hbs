@@ -2,26 +2,21 @@
   <div class="p-3 text-center bg-white border-bottom">
     <div class="container-fluid">
       <div class="row align-items-center">
-        <!-- Left side: About Us and Social -->
         <div class="col-6 col-md-5 d-flex justify-content-start align-items-center">
-          <!-- About Us Button -->
           <a class="text-reset me-3" href="/about" style="font-size: 1.2em; height: 40px; line-height: 40px; display: inline-block; text-decoration: none;">
             About Us
           </a>
-          <!-- Social Button -->
           <a class="text-reset me-3" href="/social" style="font-size: 1.2em; height: 40px; line-height: 40px; display: inline-block; text-decoration: none;">
             Social
           </a>
         </div>
 
-        <!-- Center: Home/Dove icon remains unchanged -->
         <div class="col-6 col-md-2 text-center">
           <a href="/" class="ms-md-2" style="text-decoration: none; color: #000; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; font-size: 1.5em; line-height: 40px; font-weight: bolder;">
             <i class="fas fa-dove" style="font-size: 25px; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
           </a>
         </div>
 
-        <!-- Right side: Other icons -->
         <div class="col-12 col-md-5 d-flex justify-content-end align-items-center">
           <a class="text-reset me-3" href="/settings">
             <i class="fas fa-cog" title="Settings" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
@@ -51,12 +46,20 @@
 
           <div class="dropdown">
             <a class="text-reset dropdown-toggle d-flex align-items-center hidden-arrow" href="#" id="userDropdown" role="button" data-mdb-dropdown-init aria-expanded="false">
-              <i class="fas fa-user rounded-circle" title="User" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+              {{#if user.profileImage}}
+                <img src="{{user.profileImage}}" class="rounded-circle shadow-sm" title="User" style="width: 40px; height: 40px; object-fit: cover;">
+              {{else}}
+                <i class="fas fa-user rounded-circle" title="User" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+              {{/if}}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
               <li><a class="dropdown-item" href="/profile">My profile</a></li>
               <li><a class="dropdown-item" href="/settings">Settings</a></li>
-              <li><a class="dropdown-item" href="/login">Login</a></li>
+              {{#if user}}
+                <li><a class="dropdown-item" href="/logout">Logout</a></li>
+              {{else}}
+                <li><a class="dropdown-item" href="/login">Login</a></li>
+              {{/if}}
             </ul>
           </div>
         </div>
@@ -71,9 +74,9 @@
   }
 
   .navbar-dark .nav-item .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     border-radius: 0.25rem;
-    color: #fff;
+    color: #000000;
   }
 </style>

@@ -70,10 +70,10 @@ db.connect()
           const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
           const newAdmin = await db.one(`
-            INSERT INTO students (first_name, last_name, email, username, password)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO students (first_name, last_name, email, username, password, profile_photo)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING student_id
-          `, ['Admin', 'User', adminEmail, adminUsername, hashedPassword]);
+          `, ['Admin', 'User', adminEmail, adminUsername, hashedPassword, '']);
 
           console.log('Admin user created successfully:', newAdmin.student_id);
         } else {
@@ -184,14 +184,14 @@ app.get('/login', (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  
+
   try {
     const user = await db.oneOrNone(`
-      SELECT student_id, email, username, first_name, last_name, password 
-      FROM students 
+      SELECT student_id, email, username, first_name, last_name, password, profile_photo
+      FROM students
       WHERE email = $1
     `, [email]);
-    
+
     if (!user || !bcrypt.compareSync(password, user.password)) {
       return res.render('pages/login', {
         title: 'Login',
@@ -205,7 +205,8 @@ app.post('/login', async (req, res) => {
       email: user.email,
       username: user.username,
       first_name: user.first_name,
-      last_name: user.last_name
+      last_name: user.last_name,
+      profileImage: user.profile_photo // Add the profile image to the session
     };
 
     res.redirect('/profile');
@@ -224,14 +225,15 @@ app.get('/profile', auth, (req, res) => {
   // Retrieve the user from session
   const user = req.session.user;
 
-  // Assign a default profile image if not available
-  const profileImage = user.profileImage ? user.profileImage : '/images/cardinal-bird-branch.jpg';
+  // Assign a default profile image to the session if not already there
+  if (!user.profileImage) {
+    req.session.user.profileImage = '/images/cardinal-bird-branch.jpg';
+  }
 
-  // Render the profile page with the title, user data, and profileImage
+  // Render the profile page with the title and user data
   res.render('pages/profile', {
     title: 'Your Profile',
-    user,
-    profileImage
+    user
   });
 });
 
@@ -250,12 +252,12 @@ app.get('/search', (req, res) => {
   })
 });
 
-// Logout Route
+// Logout Route (handles session destruction and renders the logout page)
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) console.log('Session destruction error:', err);
     res.clearCookie('connect.sid');
-    res.redirect('/');
+    res.render('pages/logout', { title: 'Logging Out' });
   });
 });
 
@@ -277,14 +279,16 @@ app.post('/settings/website', async (req, res) => {
     res.status(500).json({ error: 'Failed to save website settings' });
   }
 });
+
 app.post('/update-profile-image', async (req, res) => {
   try {
-    // Assuming you store the user id in the session:
-    const userId = req.session.userId;
+    const userId = req.session.user.id;
     const { profileImage } = req.body;
 
-    // Update the user's profile_photo field in the database.
-    await pool.query('UPDATE students SET profile_photo = $1 WHERE student_id = $2', [profileImage, userId]);
+    await db.query('UPDATE students SET profile_photo = $1 WHERE student_id = $2', [profileImage, userId]);
+
+    // Update the session
+    req.session.user.profileImage = profileImage;
 
     res.json({ success: true });
   } catch (err) {
@@ -292,6 +296,7 @@ app.post('/update-profile-image', async (req, res) => {
     res.json({ success: false, error: 'Failed to update profile picture.' });
   }
 });
+
 
 // API endpoint for saving user-specific settings (requires login)
 app.post('/settings/user', auth, async (req, res) => {
