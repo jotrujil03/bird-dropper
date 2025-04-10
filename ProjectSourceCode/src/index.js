@@ -9,6 +9,19 @@ const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const multer = require('multer'); // Add multer
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, 'resources/uploads')); // Ensure this directory exists
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
+
 // App Configuration
 const hbs = handlebars.create({
   extname: 'hbs',
@@ -18,11 +31,23 @@ const hbs = handlebars.create({
     ifEquals: function(arg1, arg2, options) {
       return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
     },
-    eq: function(arg1, arg2) { // Add the 'eq' helper here
+    eq: function(arg1, arg2) {
       return (arg1 == arg2);
+    },
+    formatDate: function(datetime) {
+      if (!datetime) return '';
+      const date = new Date(datetime);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
   }
 });
+
 
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
@@ -44,6 +69,14 @@ app.use(
     }
   })
 );
+
+// Middleware
+const auth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+};
 
 // Database Configuration
 const dbConfig = {
@@ -143,19 +176,75 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Middleware
-const auth = (req, res, next) => {
-  if (!req.session.user) {
-    return res.redirect('/login');
+// Handle new post submission
+app.post('/post', auth, upload.single('photo'), async (req, res) => {
+  const { caption } = req.body;
+  const userId = req.session.user.id;
+
+  if (!req.file) {
+    return res.status(400).send('No image uploaded.');
   }
-  next();
-};
+
+  const imageUrl = `/uploads/${req.file.filename}`;
+
+  try {
+    await db.none(`
+      INSERT INTO posts (user_id, image_url, caption, created_at)
+      VALUES ($1, $2, $3, NOW())
+    `, [userId, imageUrl, caption]);
+
+    res.redirect('/social');
+  } catch (error) {
+    console.error('Error saving post:', error);
+    res.status(500).send('Error saving your post.');
+  }
+});
+
+app.get('/social', auth, async (req, res) => {
+  try {
+    const posts = await db.any(`
+      SELECT p.*, s.username, s.profile_photo AS avatar
+      FROM posts p
+      JOIN students s ON p.user_id = s.student_id
+      ORDER BY p.created_at DESC
+    `);
+
+    const formattedPosts = posts.map(post => ({
+      imageUrl: post.image_url,
+      caption: post.caption,
+      createdAt: post.created_at,
+      likes: 0, // placeholder for future like feature
+      comments: [], // placeholder for future comments
+      user: {
+        username: post.username,
+        avatar: post.avatar || '/images/cardinal-bird-branch.jpg'
+      }
+    }));
+
+    res.render('pages/social', {
+      title: 'Social',
+      posts: formattedPosts
+    });
+  } catch (err) {
+    console.error('Error loading social feed:', err);
+    res.render('pages/social', {
+      title: 'Social',
+      posts: [],
+      error: 'Could not load posts at this time.'
+    });
+  }
+});
+
+
+
 
 // Share user data with all views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
 });
+
+
 
 // Routes
 app.get('/', async (req, res) => {
@@ -323,18 +412,7 @@ app.post('/settings/website', async (req, res) => {
   }
 });
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, 'resources/uploads')); // Ensure this directory exists
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
 
-const upload = multer({ storage: storage });
 
 app.post('/update-profile-image', auth, upload.single('profileImage'), async (req, res) => {
   if (!req.file) {
@@ -381,11 +459,6 @@ app.post('/settings/user', auth, async (req, res) => {
     console.error('Error saving user settings:', error);
     res.status(500).json({ error: 'Failed to save user settings' });
   }
-});
-
-// Social Route
-app.get('/social', (req, res) => {
-  res.render('pages/social')
 });
 
 // About Route
