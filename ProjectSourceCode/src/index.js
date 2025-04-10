@@ -118,7 +118,7 @@ app.post('/register', async (req, res) => {
       INSERT INTO students 
       (first_name, last_name, email, username, password) 
       VALUES ($1, $2, $3, $4, $5) 
-      RETURNING student_id, username, email, first_name, last_name
+      RETURNING student_id, username, email, first_name, last_name, created_at, profile_photo
     `, [first_name, last_name, email, username, hashedPassword]);
 
     req.session.user = {
@@ -126,7 +126,9 @@ app.post('/register', async (req, res) => {
       username: newUser.username,
       email: newUser.email,
       first_name: newUser.first_name,
-      last_name: newUser.last_name
+      last_name: newUser.last_name,
+      created_at: newUser.created_at,
+      profile_photo: newUser.profile_photo
     };
 
     res.redirect('/profile');
