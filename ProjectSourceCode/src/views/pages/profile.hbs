@@ -16,11 +16,18 @@
             <img src="/images/cardinal-bird-branch.jpg" class="rounded-circle shadow-lg border border-3 border-primary mb-4" alt="Default Profile Picture" width="140" height="140">
           {{/if}}
           
-          <!-- Form for editing bio -->
+          <!-- Form for editing profile -->
           <form action="/edit-profile" method="POST">
             <div class="mb-4 text-start">
               <label for="bio" class="form-label text-muted"><strong>Bio</strong></label>
-              <textarea class="form-control" id="bio" name="bio" rows="5">{{bio}}</textarea>
+              <textarea class="form-control" id="bio" name="bio" rows="3">{{bio}}</textarea>
+            </div>
+            
+            <!-- Favorite Bird Field -->
+            <div class="mb-4 text-start">
+              <label for="favoriteBird" class="form-label text-muted"><strong>Favorite Bird</strong></label>
+              <input type="text" class="form-control" id="favoriteBird" name="favoriteBird" value="{{favoriteBird}}" placeholder="e.g. Northern Cardinal">
+              <div class="form-text">Tell us which bird you love the most!</div>
             </div>
             
             <!-- Read-only user details -->
