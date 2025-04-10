@@ -7,6 +7,7 @@ const pgp = require('pg-promise')();
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
+const multer = require('multer'); // Add multer
 
 // App Configuration
 const hbs = handlebars.create({
@@ -115,11 +116,11 @@ app.post('/register', async (req, res) => {
     const hashedPassword = bcrypt.hashSync(password, salt);
 
     const newUser = await db.one(`
-      INSERT INTO students 
-      (first_name, last_name, email, username, password) 
-      VALUES ($1, $2, $3, $4, $5) 
+      INSERT INTO students
+      (first_name, last_name, email, username, password, profile_photo)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING student_id, username, email, first_name, last_name, created_at, profile_photo
-    `, [first_name, last_name, email, username, hashedPassword]);
+    `, [first_name, last_name, email, username, hashedPassword, '']);
 
     req.session.user = {
       id: newUser.student_id,
@@ -128,7 +129,7 @@ app.post('/register', async (req, res) => {
       first_name: newUser.first_name,
       last_name: newUser.last_name,
       created_at: newUser.created_at,
-      profile_photo: newUser.profile_photo
+      profileImage: newUser.profile_photo
     };
 
     res.redirect('/profile');
@@ -228,40 +229,35 @@ app.post('/login', async (req, res) => {
 // Profile Route
 app.get('/profile', auth, async (req, res) => {
   try {
-    // Fetch the complete user data, including the bio
+    // Fetch the complete user data, including the profile_photo
     const student = await db.one(
-      'SELECT student_id, first_name, last_name, email, username, bio, created_at FROM students WHERE student_id = $1',
+      'SELECT student_id, first_name, last_name, email, username, bio, created_at, profile_photo FROM students WHERE student_id = $1',
       [req.session.user.id]
     );
 
     // Optionally update the session with the fetched bio
     req.session.user.bio = student.bio;
 
-    // Assign a default profile image if not available
-    const profileImage = req.session.user.profileImage 
-      ? req.session.user.profileImage 
-      : '/images/cardinal-bird-branch.jpg';
-
-    // Render the profile page with student data (including bio)
+    // Render the profile page with student data (including bio and profile_photo)
     res.render('pages/profile', {
       title: 'Your Profile',
       user: student,
-      profileImage,
+      profileImage: student.profile_photo || '/images/cardinal-bird-branch.jpg',
       bio: student.bio
     });
   } catch (error) {
     console.error('Error fetching profile:', error);
 
     // Fallback: render the profile page using session data, with an error message
-    const profileImage = req.session.user.profileImage 
-      ? req.session.user.profileImage 
+    const profileImage = req.session.user.profileImage
+      ? req.session.user.profileImage
       : '/images/cardinal-bird-branch.jpg';
 
     res.render('pages/profile', {
       title: 'Your Profile',
       user: req.session.user,
       profileImage,
-      error: 'Unable to load profile data'
+      error: 'Unable to load complete profile data'
     });
   }
 });
@@ -327,20 +323,37 @@ app.post('/settings/website', async (req, res) => {
   }
 });
 
-app.post('/update-profile-image', async (req, res) => {
-  try {
-    const userId = req.session.userId;
-    const { profileImage } = req.body;
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, 'resources/uploads')); // Ensure this directory exists
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
 
-    await db.query('UPDATE students SET profile_photo = $1 WHERE student_id = $2', [profileImage, userId]);
+const upload = multer({ storage: storage });
+
+app.post('/update-profile-image', auth, upload.single('profileImage'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: 'No file uploaded.' });
+  }
+
+  try {
+    const userId = req.session.user.id;
+    const profileImageURL = `/uploads/${req.file.filename}`; // Construct the URL
+
+    await db.query('UPDATE students SET profile_photo = $1 WHERE student_id = $2', [profileImageURL, userId]);
 
     // Update the session
-    req.session.user.profileImage = profileImage;
+    req.session.user.profileImage = profileImageURL;
 
-    res.json({ success: true });
+    res.json({ success: true, profileImage: profileImageURL }); // Optionally send back the new URL
   } catch (err) {
     console.error('Error updating profile picture:', err);
-    res.json({ success: false, error: 'Failed to update profile picture.' });
+    res.status(500).json({ success: false, error: 'Failed to update profile picture.' });
   }
 });
 

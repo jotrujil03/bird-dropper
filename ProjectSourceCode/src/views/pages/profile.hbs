@@ -9,14 +9,27 @@
         </div>
         <div class="card-body text-center px-4 py-5">
 
-          <!-- Profile image -->
-          {{#if profileImage}}
-            <img src="{{profileImage}}" class="rounded-circle shadow-lg border border-3 border-primary mb-4" alt="Profile Picture" width="140" height="140">
+          {{#if user.profileImage}}
+            <img src="{{user.profileImage}}" class="rounded-circle shadow-lg border border-3 border-primary mb-4" alt="Profile Picture" width="140" height="140">
           {{else}}
             <img src="/images/cardinal-bird-branch.jpg" class="rounded-circle shadow-lg border border-3 border-primary mb-4" alt="Default Profile Picture" width="140" height="140">
           {{/if}}
 
-          <!-- Display Bio Section -->
+          <div class="mb-4">
+            <h5 class="text-muted">Update Profile Picture</h5>
+            <form id="upload-profile-image-form" action="/update-profile-image" method="POST" enctype="multipart/form-data">
+              <div class="input-group mb-3">
+                <label for="upload-image" class="input-group-text" style="cursor: pointer;" title="Upload an image">
+                  <i class="fas fa-upload text-muted" aria-hidden="true"></i>
+                </label>
+                <input type="file" class="form-control visually-hidden" id="upload-image" name="profileImage" aria-describedby="upload-image-label">
+                <label class="form-control" id="upload-image-label">Choose a file</label>
+              </div>
+              <button type="submit" class="btn btn-success mt-2">Upload Picture</button>
+              <div id="upload-status" class="form-text text-start"></div>
+            </form>
+          </div>
+
           <div id="bio-display">
             <h5 class="text-muted">Bio</h5>
             {{#if bio}}
@@ -27,7 +40,6 @@
             <button id="edit-bio-button" class="btn btn-primary">Edit</button>
           </div>
 
-          <!-- Edit Bio Form (initially hidden) -->
           <div id="bio-edit-form" style="display:none;">
             <form action="/edit-profile" method="POST">
               <div class="mb-4 text-start">
@@ -46,7 +58,6 @@
             <input type="text" class="form-control" id="favoriteBird" name="favoriteBird" value="{{favoriteBird}}" placeholder="e.g. Northern Cardinal">
           </div>
 
-          <!-- Other profile information (read-only) -->
           <div class="mt-5 text-start">
             <div class="mb-3">
               <label class="form-label text-muted"><strong>Email</strong></label>
@@ -75,16 +86,70 @@
 </div>
 
 <script>
-  // Show the edit form when "Edit" button is clicked
-  document.getElementById('edit-bio-button').addEventListener('click', () => {
-    document.getElementById('bio-display').style.display = 'none';
-    document.getElementById('bio-edit-form').style.display = 'block';
-  });
+  document.addEventListener('DOMContentLoaded', () => {
+    const uploadForm = document.getElementById('upload-profile-image-form');
+    const profileImageElement = document.querySelector('.card-body > img');
+    const uploadStatus = document.getElementById('upload-status');
+    const fileInputLabel = document.getElementById('upload-image-label');
+    const fileInput = document.getElementById('upload-image');
 
-  // Hide the edit form when "Cancel" button is clicked
-  document.getElementById('cancel-edit-button').addEventListener('click', () => {
-    document.getElementById('bio-edit-form').style.display = 'none';
-    document.getElementById('bio-display').style.display = 'block';
+    // Update the label text when a file is chosen
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        fileInputLabel.textContent = fileInput.files[0].name;
+      } else {
+        fileInputLabel.textContent = 'Choose a file';
+      }
+    });
+
+    uploadForm.addEventListener('submit', async (event) => {
+      event.preventDefault(); // Prevent the default form submission
+
+      const formData = new FormData(uploadForm);
+      uploadStatus.textContent = 'Uploading...';
+
+      try {
+        const response = await fetch('/update-profile-image', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          uploadStatus.textContent = 'Profile picture updated successfully!';
+          if (data.profileImage) {
+            profileImageElement.src = data.profileImage;
+          }
+        } else {
+          uploadStatus.textContent = `Error uploading: ${data.error || 'Something went wrong.'}`;
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        uploadStatus.textContent = 'Failed to upload. Please try again later.';
+      }
+    });
+
+    // Show the edit form when "Edit" button is clicked
+    const editBioButton = document.getElementById('edit-bio-button');
+    const bioDisplay = document.getElementById('bio-display');
+    const bioEditForm = document.getElementById('bio-edit-form');
+
+    if (editBioButton) {
+      editBioButton.addEventListener('click', () => {
+        bioDisplay.style.display = 'none';
+        bioEditForm.style.display = 'block';
+      });
+    }
+
+    // Hide the edit form when "Cancel" button is clicked
+    const cancelEditButton = document.getElementById('cancel-edit-button');
+    if (cancelEditButton) {
+      cancelEditButton.addEventListener('click', () => {
+        bioEditForm.style.display = 'none';
+        bioDisplay.style.display = 'block';
+      });
+    }
   });
 </script>
 
