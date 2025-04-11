@@ -4,52 +4,36 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bird Dropper Social</title>
-  <!-- Google Fonts for improved typography -->
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto&display=swap" rel="stylesheet">
-  <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" />
   <style>
-    /* Reset default browser styles */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    /* Overall page styling */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Roboto', sans-serif;
       background: #f1f3f6;
       color: #333;
       line-height: 1.6;
     }
-    
     .container {
       max-width: 800px;
       margin: 0 auto;
       padding: 0 20px;
     }
-    
-    /* Social header styling */
     .social-header {
       text-align: center;
       margin-bottom: 40px;
     }
-    
     .social-header h1 {
       font-family: 'Montserrat', sans-serif;
       font-size: 2.8rem;
       color: #222;
       margin-bottom: 10px;
     }
-    
     .social-header p {
       font-size: 1.2rem;
       color: #555;
     }
-    
-    /* Card container for sections */
     .card {
       background: #ffffff;
       border-radius: 12px;
@@ -57,24 +41,19 @@
       padding: 20px;
       margin-bottom: 40px;
     }
-    
-    /* Create Post section */
     .create-post h2 {
       font-size: 1.6rem;
       margin-bottom: 20px;
       color: #333;
     }
-    
     .form-group {
       margin-bottom: 20px;
     }
-    
     .form-group label {
       display: block;
       font-weight: 600;
       margin-bottom: 8px;
     }
-    
     .form-group input[type="file"],
     .form-group textarea {
       width: 100%;
@@ -83,12 +62,10 @@
       border-radius: 8px;
       font-size: 1rem;
     }
-    
     .form-group textarea {
       resize: vertical;
       min-height: 80px;
     }
-    
     .btn-post {
       display: inline-block;
       background-color: #007bff;
@@ -102,18 +79,14 @@
       cursor: pointer;
       transition: background 0.3s ease;
     }
-    
     .btn-post:hover {
       background-color: #0056b3;
     }
-    
-    /* Feed section */
     .feed h2 {
       font-size: 1.8rem;
       margin-bottom: 20px;
       color: #333;
     }
-    
     .post {
       background: #ffffff;
       border-radius: 12px;
@@ -122,56 +95,49 @@
       overflow: hidden;
       transition: transform 0.2s ease-in-out;
     }
-    
     .post:hover {
       transform: translateY(-3px);
     }
-    
     .post-header {
       display: flex;
       align-items: center;
       padding: 15px;
+      position: relative;
     }
-    
     .post-header img.avatar {
       width: 48px;
       height: 48px;
       border-radius: 50%;
       margin-right: 15px;
     }
-    
     .post-info h3 {
       font-size: 1.2rem;
       font-weight: 600;
       margin-bottom: 3px;
       color: #222;
     }
-    
     .post-info .timestamp {
       font-size: 0.9rem;
       color: #888;
     }
-    
     .post-image img {
       width: 100%;
       max-height: 500px;
       object-fit: cover;
       display: block;
     }
-    
     .post-caption {
       padding: 15px;
       font-size: 1rem;
       color: #444;
     }
-    
     .post-actions {
       padding: 15px;
       border-top: 1px solid #f0f0f0;
       display: flex;
-      gap: 30px;
+      justify-content: space-between;
+      align-items: center;
     }
-    
     .post-actions button {
       background: none;
       border: none;
@@ -183,40 +149,68 @@
       cursor: pointer;
       transition: color 0.3s ease;
     }
-    
     .post-actions button:hover {
       color: #007bff;
     }
-    
-    /* No posts message */
     .no-posts {
       text-align: center;
       padding: 40px 0;
       font-size: 1.2rem;
       color: #777;
     }
-    
-    /* Responsive adjustments */
+
+    /* Dropdown menu styles */
+    .options-menu {
+      position: relative;
+      margin-left: auto;
+    }
+
+    .options-button {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: #888;
+    }
+
+    .options-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      padding: 10px;
+      z-index: 10;
+    }
+
+    .options-dropdown form {
+      margin: 0;
+    }
+
+    .options-dropdown button {
+      background: none;
+      border: none;
+      color: red;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
     @media (max-width: 600px) {
-      .social-header h1 {
-        font-size: 2.2rem;
-      }
-      .create-post h2,
-      .feed h2 {
-        font-size: 1.4rem;
-      }
+      .social-header h1 { font-size: 2.2rem; }
+      .create-post h2, .feed h2 { font-size: 1.4rem; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Social Header -->
     <header class="social-header">
       <h1>Bird Dropper Social</h1>
       <p>Share your bird sightings with the community!</p>
     </header>
-    
-    <!-- Create Post Section -->
+
     <section class="create-post">
       <div class="card">
         <h2>Share Your Sighting</h2>
@@ -233,11 +227,10 @@
         </form>
       </div>
     </section>
-    
-    <!-- Feed Section -->
+
     <section class="feed">
       <h2>Recent Posts</h2>
-      
+
       {{#if posts}}
         {{#each posts}}
           <div class="post">
@@ -247,6 +240,20 @@
                 <h3 class="username">{{user.username}}</h3>
                 <span class="timestamp">{{formatDate createdAt}}</span>
               </div>
+              {{#if (eq ../user.id user.id)}}
+                <div class="options-menu">
+                  <button class="options-button" onclick="toggleDropdown(this)">
+                    <i class="fas fa-ellipsis-v"></i>
+                  </button>
+                  <div class="options-dropdown">
+                    <form class="delete-form" action="/delete-post/{{id}}" method="POST">
+                      <button type="submit"><i class="fa fa-trash"></i> Delete Post</button>
+                    </form>
+                  </div>
+                </div>
+              {{/if}}
+              
+
             </div>
             <div class="post-image">
               <img src="{{imageUrl}}" alt="{{caption}}">
@@ -267,5 +274,28 @@
       {{/if}}
     </section>
   </div>
+
+  <script>
+    function toggleDropdown(button) {
+      const dropdown = button.nextElementSibling;
+      const isVisible = dropdown.style.display === "block";
+
+      // Close all open dropdowns
+      document.querySelectorAll('.options-dropdown').forEach(menu => {
+        menu.style.display = "none";
+      });
+
+      // Toggle current dropdown
+      dropdown.style.display = isVisible ? "none" : "block";
+    }
+
+    window.addEventListener('click', function (e) {
+      if (!e.target.closest('.options-menu')) {
+        document.querySelectorAll('.options-dropdown').forEach(menu => {
+          menu.style.display = 'none';
+        });
+      }
+    });
+  </script>
 </body>
 </html>
