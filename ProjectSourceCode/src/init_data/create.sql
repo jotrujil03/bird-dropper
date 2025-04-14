@@ -1,7 +1,7 @@
 -- Connect to the database
 \c users_db;
 
--- Create students table
+-- Create students table (updated with a timezone column)
 CREATE TABLE IF NOT EXISTS students (
     student_id SERIAL PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS students (
     password VARCHAR(100) NOT NULL,
     profile_photo VARCHAR(255),
     bio TEXT,
+    timezone VARCHAR(100),    -- New column for time zone selection
     created_at TIMESTAMP DEFAULT NOW()
 );
 
