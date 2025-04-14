@@ -1,253 +1,61 @@
+<!-- views/pages/social.hbs  — AJAX comments & delete -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Bird Dropper Social</title>
+
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"/>
+
   <style>
-    /* Base Styles */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Roboto', sans-serif;
-      background: #f1f3f6;
-      color: #333;
-      line-height: 1.6;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-    .social-header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-    .social-header h1 {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 2.8rem;
-      color: #222;
-      margin-bottom: 10px;
-    }
-    .social-header p {
-      font-size: 1.2rem;
-      color: #555;
-    }
-    .card {
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin-bottom: 40px;
-    }
-    .create-post h2 {
-      font-size: 1.6rem;
-      margin-bottom: 20px;
-      color: #333;
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .form-group input[type="file"],
-    .form-group textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 1rem;
-    }
-    .form-group textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-    .btn-post {
-      display: inline-block;
-      background-color: #007bff;
-      color: #fff;
-      padding: 12px 25px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    .btn-post:hover {
-      background-color: #0056b3;
-    }
-    .feed h2 {
-      font-size: 1.8rem;
-      margin-bottom: 20px;
-      color: #333;
-    }
-    .post {
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-      margin-bottom: 30px;
-      overflow: hidden;
-      transition: transform 0.2s ease-in-out;
-      position: relative;
-    }
-    .post:hover {
-      transform: translateY(-3px);
-    }
-    .post-header {
-      display: flex;
-      align-items: center;
-      padding: 15px;
-      position: relative;
-    }
-    .post-header img.avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      margin-right: 15px;
-    }
-    .post-info h3 {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 3px;
-      color: #222;
-    }
-    .post-info .timestamp {
-      font-size: 0.9rem;
-      color: #888;
-    }
-    .post-image img {
-      width: 100%;
-      max-height: 500px;
-      object-fit: cover;
-      display: block;
-    }
-    .post-caption {
-      padding: 15px;
-      font-size: 1rem;
-      color: #444;
-    }
-    .post-actions {
-      padding: 15px;
-      border-top: 1px solid #f0f0f0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .post-actions button {
-      background: none;
-      border: none;
-      color: #555;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
-      transition: color 0.3s ease;
-    }
-    .post-actions button:hover {
-      color: #007bff;
-    }
-    .no-posts {
-      text-align: center;
-      padding: 40px 0;
-      font-size: 1.2rem;
-      color: #777;
-    }
-    /* Dropdown Menu */
-    .options-menu {
-      position: relative;
-      margin-left: auto;
-    }
-    .options-button {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: #888;
-    }
-    .options-dropdown {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 100%;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      padding: 10px;
-      z-index: 10;
-    }
-    .options-dropdown form {
-      margin: 0;
-    }
-    .options-dropdown button {
-      background: none;
-      border: none;
-      color: red;
-      font-size: 0.95rem;
-      cursor: pointer;
-    }
-    /* Like and Comment Enhancements */
-    .like-btn.liked {
-      color: red;
-      animation: glow 0.5s ease-in-out;
-    }
-    @keyframes glow {
-      0% { filter: drop-shadow(0 0 0px red); }
-      50% { filter: drop-shadow(0 0 10px red); }
-      100% { filter: drop-shadow(0 0 0px red); }
-    }
-    .comment-form {
-      display: none;
-      padding: 10px 15px;
-      border-top: 1px solid #f0f0f0;
-      align-items: center;
-      gap: 10px;
-      background: #fafafa;
-    }
-    .comment-form input.comment-input {
-      flex: 1;
-      padding: 5px 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 0.9rem;
-    }
-    .comment-form button.submit-comment-btn {
-      padding: 5px 10px;
-      border: none;
-      border-radius: 4px;
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    .comments-container {
-      padding: 0 15px 10px;
-    }
-    .comment {
-      display: flex;
-      align-items: baseline;
-      margin-top: 5px;
-    }
-    .comment .username {
-      font-weight: 600;
-      margin-right: 8px;
-    }
-    .comment .comment-text {
-      font-size: 0.9rem;
-    }
-    @media (max-width: 600px) {
-      .social-header h1 { font-size: 2.2rem; }
-      .create-post h2, .feed h2 { font-size: 1.4rem; }
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Roboto',sans-serif;background:#f1f3f6;color:#333;line-height:1.6}
+    .container{max-width:800px;margin:0 auto;padding:0 20px}
+    .social-header{text-align:center;margin-bottom:40px}
+    .social-header h1{font-family:'Montserrat',sans-serif;font-size:2.8rem;color:#222;margin-bottom:10px}
+    .social-header p{font-size:1.2rem;color:#555}
+    .card{background:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1);padding:20px;margin-bottom:40px}
+    .create-post h2{font-size:1.6rem;margin-bottom:20px;color:#333}
+    .form-group{margin-bottom:20px}
+    .form-group label{display:block;font-weight:600;margin-bottom:8px}
+    .form-group input[type=file],.form-group textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:1rem}
+    .form-group textarea{resize:vertical;min-height:80px}
+    .btn-post{display:inline-block;background:#007bff;color:#fff;padding:12px 25px;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:background .3s}
+    .btn-post:hover{background:#0056b3}
+    .feed h2{font-size:1.8rem;margin-bottom:20px;color:#333}
+    .post{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:30px;overflow:hidden;transition:transform .2s}
+    .post:hover{transform:translateY(-3px)}
+    .post-header{display:flex;align-items:center;padding:15px}
+    .post-header img.avatar{width:48px;height:48px;border-radius:50%;margin-right:15px}
+    .post-info h3{font-size:1.2rem;font-weight:600;margin-bottom:3px;color:#222}
+    .post-info .timestamp{font-size:.9rem;color:#888}
+    .post-image img{width:100%;max-height:500px;object-fit:cover;display:block}
+    .post-caption{padding:15px;font-size:1rem;color:#444}
+    .post-actions{padding:15px;border-top:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+    .post-actions button{background:none;border:none;color:#555;font-size:1rem;display:flex;align-items:center;gap:5px;cursor:pointer;transition:color .3s}
+    .post-actions button:hover{color:#007bff}
+    .no-posts{text-align:center;padding:40px 0;font-size:1.2rem;color:#777}
+    .options-menu{margin-left:auto;position:relative}
+    .options-button{background:none;border:none;font-size:1.2rem;cursor:pointer;color:#888}
+    .options-dropdown{display:none;position:absolute;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);padding:10px;z-index:10}
+    .options-dropdown button{background:none;border:none;color:red;font-size:.95rem;cursor:pointer}
+    .like-btn.liked{color:red;animation:glow .5s}
+    @keyframes glow{0%{filter:drop-shadow(0 0 0 red)}50%{filter:drop-shadow(0 0 10px red)}100%{filter:drop-shadow(0 0 0 red)}}
+    .comment-form{display:none;padding:10px 15px;border-top:1px solid #f0f0f0;align-items:center;gap:10px;background:#fafafa}
+    .comment-input{flex:1;padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:.9rem}
+    .submit-comment-btn{padding:5px 10px;border:none;border-radius:4px;background:#007bff;color:#fff;cursor:pointer}
+    .comments-container{padding:0 15px 10px}
+    .comment{display:flex;align-items:baseline;margin-top:5px}
+    .comment .username{font-weight:600;margin-right:8px}
+    .comment .comment-text{font-size:.9rem}
+    .delete-comment-btn{background:none;border:none;color:red;margin-left:6px;cursor:pointer}
+    @media(max-width:600px){.social-header h1{font-size:2.2rem}.create-post h2,.feed h2{font-size:1.4rem}}
   </style>
 </head>
+
 <body data-username="{{user.username}}">
   <div class="container">
     <header class="social-header">
@@ -255,6 +63,7 @@
       <p>Share your bird sightings with the community!</p>
     </header>
 
+    <!-- CREATE POST -->
     <section class="create-post">
       <div class="card">
         <h2>Share Your Sighting</h2>
@@ -272,36 +81,35 @@
       </div>
     </section>
 
+    <!-- FEED -->
     <section class="feed">
       <h2>Recent Posts</h2>
       {{#if posts}}
         {{#each posts}}
           <div class="post" data-post-id="{{id}}">
             <div class="post-header">
-              <img src="{{user.avatar}}" alt="User avatar" class="avatar">
+              <img src="{{user.avatar}}" alt="avatar" class="avatar">
               <div class="post-info">
                 <h3 class="username">{{user.username}}</h3>
                 <span class="timestamp">{{formatDate createdAt}}</span>
               </div>
               {{#if (eq ../user.id user.id)}}
-                <div class="options-menu">
-                  <button class="options-button" onclick="toggleDropdown(this)">
-                    <i class="fas fa-ellipsis-v"></i>
-                  </button>
-                  <div class="options-dropdown">
-                    <form class="delete-form" action="/delete-post/{{id}}" method="POST">
-                      <button type="submit"><i class="fa fa-trash"></i> Delete Post</button>
-                    </form>
-                  </div>
+              <div class="options-menu">
+                <button class="options-button" onclick="toggleDropdown(this)">
+                  <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="options-dropdown">
+                  <form action="/delete-post/{{id}}" method="POST">
+                    <button type="submit"><i class="fa fa-trash"></i> Delete Post</button>
+                  </form>
                 </div>
+              </div>
               {{/if}}
             </div>
-            <div class="post-image">
-              <img src="{{imageUrl}}" alt="{{caption}}">
-            </div>
-            <div class="post-caption">
-              <p>{{caption}}</p>
-            </div>
+
+            <div class="post-image"><img src="{{imageUrl}}" alt="{{caption}}"></div>
+            <div class="post-caption"><p>{{caption}}</p></div>
+
             <div class="post-actions">
               <button class="like-btn" data-liked="false">
                 <i class="fa fa-heart"></i> <span class="like-count">{{likes}}</span>
@@ -310,134 +118,130 @@
                 <i class="fa fa-comment"></i> <span class="comment-count">{{comments.length}}</span>
               </button>
             </div>
-            <!-- Existing comments -->
+
             <div class="comments-container">
-              {{#if comments}}
-                {{#each comments}}
-                  <div class="comment">
-                    <span class="username">{{username}}</span>
-                    <span class="comment-text">{{comment}}</span>
-                  </div>
-                {{/each}}
-              {{/if}}
+              {{#each comments}}
+                <div class="comment" data-comment-id="{{comment_id}}">
+                  <span class="username">{{username}}</span>
+                  <span class="comment-text">{{comment}}</span>
+                  {{#if (eq username @root.user.username)}}
+                    <button class="delete-comment-btn">🗑</button>
+                  {{/if}}
+                </div>
+              {{/each}}
             </div>
-            <!-- Hidden comment form -->
+
             <div class="comment-form">
-              <input type="text" placeholder="Add a comment..." class="comment-input">
+              <input type="text" placeholder="Add a comment…" class="comment-input">
               <button class="submit-comment-btn">Post</button>
             </div>
           </div>
         {{/each}}
       {{else}}
-        <div class="no-posts">
-          <p>No posts yet! Be the first to share a bird sighting.</p>
-        </div>
+        <div class="no-posts">No posts yet! Be the first to share a bird sighting.</div>
       {{/if}}
     </section>
   </div>
 
+  <!-- SCRIPTS -->
   <script>
-    // Dropdown menu functionality
-    function toggleDropdown(button) {
-      const dropdown = button.nextElementSibling;
-      const isVisible = dropdown.style.display === "block";
-      // Close all open dropdowns
-      document.querySelectorAll('.options-dropdown').forEach(menu => {
-        menu.style.display = "none";
-      });
-      // Toggle current dropdown
-      dropdown.style.display = isVisible ? "none" : "block";
+    /* dropdown menu */
+    function toggleDropdown(btn){
+      const dd=btn.nextElementSibling;
+      const open=dd.style.display==='block';
+      document.querySelectorAll('.options-dropdown').forEach(m=>m.style.display='none');
+      dd.style.display=open?'none':'block';
     }
-    window.addEventListener('click', function (e) {
-      if (!e.target.closest('.options-menu')) {
-        document.querySelectorAll('.options-dropdown').forEach(menu => {
-          menu.style.display = 'none';
-        });
+    window.addEventListener('click',e=>{
+      if(!e.target.closest('.options-menu')){
+        document.querySelectorAll('.options-dropdown').forEach(m=>m.style.display='none');
       }
     });
 
-    // Like button functionality
-    document.querySelectorAll('.like-btn').forEach(button => {
-      button.addEventListener('click', function(e) {
+    /* like button */
+    document.querySelectorAll('.like-btn').forEach(btn=>{
+      btn.addEventListener('click',function(e){
         e.preventDefault();
-        const postElement = this.closest('.post');
-        const postId = postElement.getAttribute('data-post-id');
-        fetch(`/like-post/${postId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            const liked = this.getAttribute('data-liked') === 'true';
-            // Toggle liked state and update UI accordingly
-            if (!liked) {
-              this.setAttribute('data-liked', 'true');
-              this.classList.add('liked');
-            } else {
-              this.setAttribute('data-liked', 'false');
-              this.classList.remove('liked');
-            }
-            this.querySelector('.like-count').textContent = data.likeCount;
-          } else {
-            alert('Error processing like.');
+        const post=this.closest('.post');
+        fetch(`/like-post/${post.dataset.postId}`,{
+          method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'}
+        }).then(r=>r.json()).then(d=>{
+          if(d.success){
+            const liked=this.dataset.liked==='true';
+            this.dataset.liked=!liked;
+            this.classList.toggle('liked',!liked);
+            this.querySelector('.like-count').textContent=d.likeCount;
           }
-        })
-        .catch(error => console.error('Error:', error));
+        });
       });
     });
 
-    // Toggle comment form visibility on comment button click
-    document.querySelectorAll('.comment-btn').forEach(button => {
-      button.addEventListener('click', function(e) {
+    /* toggle comment form */
+    document.querySelectorAll('.comment-btn').forEach(btn=>{
+      btn.addEventListener('click',function(e){
         e.preventDefault();
-        const postElement = this.closest('.post');
-        const commentForm = postElement.querySelector('.comment-form');
-        // Toggle the comment form display as a flex container
-        commentForm.style.display = (commentForm.style.display === 'flex') ? 'none' : 'flex';
-        if (commentForm.style.display === 'flex') {
-          commentForm.querySelector('.comment-input').focus();
+        const form=this.closest('.post').querySelector('.comment-form');
+        form.style.display=form.style.display==='flex'?'none':'flex';
+        if(form.style.display==='flex') form.querySelector('.comment-input').focus();
+      });
+    });
+
+    /* add comment (returns real ID) */
+    document.querySelectorAll('.submit-comment-btn').forEach(btn=>{
+      btn.addEventListener('click',function(e){
+        e.preventDefault();
+        const post   = this.closest('.post');
+        const postId = post.dataset.postId;
+        const input  = post.querySelector('.comment-input');
+        const text   = input.value.trim();
+        if(!text) return;
+
+        fetch(`/comment-post/${postId}`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Accept':'application/json'},
+          body:JSON.stringify({comment:text})
+        })
+        .then(r=>r.json()).then(d=>{
+          if(d.success){
+            const currentUser=document.body.dataset.username;
+            const c=document.createElement('div');
+            c.className='comment';
+            c.dataset.commentId=d.commentId;           // real DB id
+            c.innerHTML=`<span class="username">${currentUser}</span>
+                         <span class="comment-text">${text}</span>
+                         <button class="delete-comment-btn">🗑</button>`;
+            post.querySelector('.comments-container').appendChild(c);
+            post.querySelector('.comment-count').textContent =
+              parseInt(post.querySelector('.comment-count').textContent)+1;
+            input.value='';
+            post.querySelector('.comment-form').style.display='none';
+          }else{
+            alert(d.error||'Error posting comment.');
+          }
+        });
+      });
+    });
+
+    /* delete comment */
+    document.addEventListener('click',function(e){
+      if(!e.target.classList.contains('delete-comment-btn')) return;
+      e.preventDefault();
+      const comment = e.target.closest('.comment');
+      const id      = comment.dataset.commentId;
+      fetch(`/delete-comment/${id}`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'}
+      })
+      .then(r=>r.json()).then(d=>{
+        if(d.success){
+          const post=comment.closest('.post');
+          comment.remove();
+          post.querySelector('.comment-count').textContent =
+            parseInt(post.querySelector('.comment-count').textContent)-1;
+        }else{
+          alert(d.error||'Failed to delete comment.');
         }
-      });
-    });
-
-    // Handle comment submission
-    document.querySelectorAll('.submit-comment-btn').forEach(button => {
-      button.addEventListener('click', function(e) {
-        e.preventDefault();
-        const postElement = this.closest('.post');
-        const postId = postElement.getAttribute('data-post-id');
-        const commentInput = postElement.querySelector('.comment-input');
-        const commentText = commentInput.value.trim();
-        if (commentText === '') return;
-        fetch(`/comment-post/${postId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comment: commentText })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            // Append the new comment to the comments container
-            const commentsContainer = postElement.querySelector('.comments-container');
-            const commentEl = document.createElement('div');
-            commentEl.classList.add('comment');
-            const currentUser = document.body.getAttribute('data-username') || 'You';
-            commentEl.innerHTML = '<span class="username">' + currentUser + '</span> <span class="comment-text">' + commentText + '</span>';
-            commentsContainer.appendChild(commentEl);
-            // Update comment count
-            const commentCountEl = postElement.querySelector('.comment-count');
-            let count = parseInt(commentCountEl.textContent);
-            commentCountEl.textContent = count + 1;
-            // Clear and hide comment form
-            commentInput.value = '';
-            postElement.querySelector('.comment-form').style.display = 'none';
-          } else {
-            alert('Error posting comment.');
-          }
-        })
-        .catch(error => console.error('Error:', error));
-      });
+      }).catch(()=>alert('Failed to delete comment.'));
     });
   </script>
 </body>

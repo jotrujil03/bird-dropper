@@ -1,548 +1,399 @@
-// Dependencies
-const express = require('express');
-const app = express();
-const handlebars = require('express-handlebars');
-const path = require('path');
-const pgp = require('pg-promise')();
-const bodyParser = require('body-parser');
-const session = require('express-session');
-const bcrypt = require('bcryptjs');
-const multer = require('multer');
+// =============================
+//  index.js  — Bird Dropper (FULL)
+// =============================
+// 14‑Apr‑2025: merged like/comment AJAX routes **and** added automatic
+//              image‑file cleanup when a post is deleted.
 
-// Configure multer for file uploads
+// ──────────────────  DEPENDENCIES  ──────────────────
+const express    = require('express');
+const app        = express();
+const handlebars = require('express-handlebars');
+const path       = require('path');
+const fs         = require('fs');                 // remove orphaned images
+const pgp        = require('pg-promise')();
+const bodyParser = require('body-parser');
+const session    = require('express-session');
+const bcrypt     = require('bcryptjs');
+const multer     = require('multer');
+
+// ──────────────────  MULTER CONFIG  ──────────────────
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, 'resources/uploads')); // Ensure this directory exists
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  destination: (req, file, cb) => cb(null, path.join(__dirname,'resources/uploads')),
+  filename   : (req, file, cb) =>
+    cb(null, `${file.fieldname}-${Date.now()}-${Math.round(Math.random()*1e9)}${path.extname(file.originalname)}`)
+});
+const upload = multer({ storage });
+
+// ──────────────────  HANDLEBARS  ──────────────────
+const hbs = handlebars.create({
+  extname:'hbs',
+  layoutsDir : path.join(__dirname,'views/layouts'),
+  partialsDir: path.join(__dirname,'views/partials'),
+  helpers:{
+    ifEquals:(a,b,o)=>a==b?o.fn(this):o.inverse(this),
+    eq:(a,b)=>a==b,
+    formatDate:ts=>ts
+      ? new Date(ts).toLocaleDateString('en-US',{
+          year:'numeric',month:'short',day:'numeric',
+          hour:'2-digit',minute:'2-digit'
+        })
+      : ''
   }
 });
-const upload = multer({ storage: storage });
+app.engine('hbs',hbs.engine);
+app.set('view engine','hbs');
+app.set('views', path.join(__dirname,'views'));
 
-// App Configuration and Handlebars Setup
-const hbs = handlebars.create({
-  extname: 'hbs',
-  layoutsDir: path.join(__dirname, 'views/layouts'),
-  partialsDir: path.join(__dirname, 'views/partials'),
-  helpers: {
-    ifEquals: function (arg1, arg2, options) {
-      return arg1 == arg2 ? options.fn(this) : options.inverse(this);
-    },
-    eq: function (arg1, arg2) {
-      return arg1 == arg2;
-    },
-    formatDate: function (datetime) {
-      if (!datetime) return '';
-      const date = new Date(datetime);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+// ──────────────────  MIDDLEWARE  ──────────────────
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(express.static(path.join(__dirname,'resources')));
+app.use(session({
+  secret:process.env.SESSION_SECRET,
+  saveUninitialized:false,
+  resave:false,
+  cookie:{secure:process.env.NODE_ENV==='production',maxAge:30*24*60*60*1000,httpOnly:true}
+}));
+app.use((req,res,next)=>{res.locals.user=req.session.user||null;next();});
+const auth=(req,res,next)=>{if(!req.session.user)return res.redirect('/login');next();};
+
+// ──────────────────  DATABASE  ──────────────────
+const db = pgp({
+  host:'db',port:5432,
+  database:process.env.POSTGRES_DB,
+  user:process.env.POSTGRES_USER,
+  password:process.env.POSTGRES_PASSWORD
+});
+
+db.connect().then(obj=>{
+  obj.done();
+  console.log('📦  Connected to PostgreSQL');
+
+  // ensure admin exists
+  (async()=>{
+    const email='admin@admin.com';
+    const exists=await db.oneOrNone('SELECT 1 FROM students WHERE email=$1',[email]);
+    if(!exists){
+      const hash=await bcrypt.hash(process.env.ADMIN_PASSWORD,10);
+      await db.none(
+        `INSERT INTO students(first_name,last_name,email,username,password,profile_photo)
+         VALUES('Admin','User',$1,'admin',$2,'')`,
+        [email,hash]
+      );
+      console.log('👑  Admin account created');
+    }
+  })();
+}).catch(e=>console.error('DB ERROR:',e.message||e));
+
+// ────────────────────────────────────────────────
+//               AUTH / USER ROUTES
+// ────────────────────────────────────────────────
+app.get('/register',(req,res)=>res.render('pages/register',{title:'Register'}));
+
+app.post('/register',async(req,res)=>{
+  const {first_name,last_name,email,username,password,confirm_password}=req.body;
+  const formData={first_name,last_name,email,username};
+
+  if(password!==confirm_password)
+    return res.render('pages/register',{title:'Register',error:'Passwords do not match',formData});
+
+  try{
+    const hash=await bcrypt.hash(password,10);
+    const u=await db.one(
+      `INSERT INTO students(first_name,last_name,email,username,password,profile_photo)
+       VALUES($1,$2,$3,$4,$5,'')
+       RETURNING student_id,username,email,first_name,last_name,created_at`,
+      [first_name,last_name,email,username,hash]
+    );
+
+    req.session.user={
+      id:u.student_id,username:u.username,email:u.email,
+      first_name:u.first_name,last_name:u.last_name,
+      created_at:u.created_at,
+      profileImage:'/images/cardinal-bird-branch.jpg'
+    };
+    res.redirect('/profile');
+  }catch(err){
+    let error='Registration failed.';
+    if(err.code==='23505'){
+      if(err.constraint==='students_email_key')    error='Email already in use';
+      if(err.constraint==='students_username_key') error='Username already taken';
+    }
+    res.render('pages/register',{title:'Register',error,formData});
+  }
+});
+
+app.get('/login',(req,res)=>res.render('pages/login',{title:'Login'}));
+
+app.post('/login',async(req,res)=>{
+  const {email,password}=req.body;
+  try{
+    const u=await db.oneOrNone('SELECT * FROM students WHERE email=$1',[email]);
+    if(!u || !await bcrypt.compare(password,u.password))
+      return res.render('pages/login',{title:'Login',error:'Invalid email or password',formData:{email}});
+
+    req.session.user={
+      id:u.student_id,email:u.email,username:u.username,
+      first_name:u.first_name,last_name:u.last_name,
+      profileImage:u.profile_photo||'/images/cardinal-bird-branch.jpg'
+    };
+    res.redirect('/profile');
+  }catch(err){
+    console.error(err);
+    res.render('pages/login',{title:'Login',error:'Login failed.',formData:{email}});
+  }
+});
+
+app.get('/logout',(req,res)=>{
+  req.session.destroy(err=>{
+    if(err)console.log(err);
+    res.clearCookie('connect.sid');
+    res.render('pages/logout',{title:'Logging Out'});
+  });
+});
+
+// ────────────────────────────────────────────────
+//               SOCIAL / FEED ROUTES
+// ────────────────────────────────────────────────
+
+// Create post
+app.post('/post',auth,upload.single('photo'),async(req,res)=>{
+  const {caption}=req.body;
+  const uid=req.session.user.id;
+  if(!req.file) return res.status(400).send('No image uploaded.');
+  try{
+    await db.none(
+      'INSERT INTO posts(user_id,image_url,caption,created_at) VALUES($1,$2,$3,NOW())',
+      [uid,`/uploads/${req.file.filename}`,caption]
+    );
+    res.redirect('/social');
+  }catch(e){
+    console.error(e);
+    res.status(500).send('Error saving post.');
+  }
+});
+
+// Delete post (also deletes image file)
+app.post('/delete-post/:id',auth,async(req,res)=>{
+  const id=req.params.id, uid=req.session.user.id;
+  try{
+    const p=await db.oneOrNone(
+      'SELECT image_url FROM posts WHERE post_id=$1 AND user_id=$2',
+      [id,uid]
+    );
+    if(!p) return res.status(403).send('Unauthorized to delete this post.');
+
+    await db.none('DELETE FROM posts WHERE post_id=$1',[id]);
+
+    if(p.image_url){
+      const fp=path.join(__dirname,'resources',p.image_url.replace(/^\//,''));
+      fs.unlink(fp,err=>{
+        if(err) console.warn('⚠️  Could not remove',fp);
       });
     }
-  }
-});
-app.engine('hbs', hbs.engine);
-app.set('view engine', 'hbs');
-app.set('views', path.join(__dirname, 'views'));
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'resources')));
-
-// Session Configuration
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    saveUninitialized: false,
-    resave: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      httpOnly: true
-    }
-  })
-);
-
-// Share user data with all views
-app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
-  next();
-});
-
-// Middleware: Protect routes
-const auth = (req, res, next) => {
-  if (!req.session.user) {
-    return res.redirect('/login');
-  }
-  next();
-};
-
-// Database Configuration
-const dbConfig = {
-  host: 'db',
-  port: 5432,
-  database: process.env.POSTGRES_DB,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD
-};
-const db = pgp(dbConfig);
-
-// Test DB Connection and Create Admin User (if needed)
-db.connect()
-  .then(obj => {
-    console.log('Database connection successful');
-    obj.done();
-
-    async function createAdminUser() {
-      const adminEmail = 'admin@admin.com';
-      const adminUsername = 'admin';
-      const adminPassword = process.env.ADMIN_PASSWORD;
-
-      try {
-        const existingAdmin = await db.oneOrNone('SELECT student_id FROM students WHERE email = $1', [adminEmail]);
-
-        if (!existingAdmin) {
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(adminPassword, salt);
-
-          const newAdmin = await db.one(
-            `INSERT INTO students (first_name, last_name, email, username, password, profile_photo)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             RETURNING student_id`,
-            ['Admin', 'User', adminEmail, adminUsername, hashedPassword, '']
-          );
-
-          console.log('Admin user created successfully:', newAdmin.student_id);
-        } else {
-          console.log('Admin user already exists.');
-        }
-      } catch (error) {
-        console.error('Error creating admin user:', error);
-      }
-    }
-
-    createAdminUser();
-  })
-  .catch(error => {
-    console.log('ERROR:', error.message || error);
-  });
-
-// Registration Routes
-app.get('/register', (req, res) => {
-  res.render('pages/register', { title: 'Register' });
-});
-
-app.post('/register', async (req, res) => {
-  const { first_name, last_name, email, username, password, confirm_password } = req.body;
-  const formData = { first_name, last_name, email, username };
-
-  if (password !== confirm_password) {
-    return res.render('pages/register', {
-      title: 'Register',
-      error: 'Passwords do not match',
-      formData
-    });
-  }
-
-  try {
-    const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = bcrypt.hashSync(password, salt);
-
-    const newUser = await db.one(
-      `INSERT INTO students
-       (first_name, last_name, email, username, password, profile_photo)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING student_id, username, email, first_name, last_name, created_at, profile_photo`,
-      [first_name, last_name, email, username, hashedPassword, '']
-    );
-
-    req.session.user = {
-      id: newUser.student_id,
-      username: newUser.username,
-      email: newUser.email,
-      first_name: newUser.first_name,
-      last_name: newUser.last_name,
-      created_at: newUser.created_at,
-      profileImage: newUser.profile_photo || '/images/cardinal-bird-branch.jpg'
-    };
-
-    res.redirect('/profile');
-  } catch (err) {
-    let error = 'Registration failed. Please try again.';
-    if (err.code === '23505') {
-      if (err.constraint === 'students_email_key') error = 'Email already in use';
-      if (err.constraint === 'students_username_key') error = 'Username already taken';
-    }
-    res.render('pages/register', { title: 'Register', error, formData });
-  }
-});
-
-// Handle new post submission
-app.post('/post', auth, upload.single('photo'), async (req, res) => {
-  const { caption } = req.body;
-  const userId = req.session.user.id;
-
-  if (!req.file) {
-    return res.status(400).send('No image uploaded.');
-  }
-
-  const imageUrl = `/uploads/${req.file.filename}`;
-
-  try {
-    await db.none(
-      `INSERT INTO posts (user_id, image_url, caption, created_at)
-       VALUES ($1, $2, $3, NOW())`,
-      [userId, imageUrl, caption]
-    );
-
     res.redirect('/social');
-  } catch (error) {
-    console.error('Error saving post:', error);
-    res.status(500).send('Error saving your post.');
-  }
-});
-
-// Delete post route (using post_id)
-app.post('/delete-post/:id', auth, async (req, res) => {
-  const postId = req.params.id;
-  const userId = req.session.user.id;
-
-  try {
-    // Ensure the post belongs to the logged-in user using post_id
-    const post = await db.oneOrNone(
-      'SELECT post_id FROM posts WHERE post_id = $1 AND user_id = $2',
-      [postId, userId]
-    );
-
-    if (!post) {
-      return res.status(403).send('Unauthorized to delete this post.');
-    }
-
-    await db.none('DELETE FROM posts WHERE post_id = $1', [postId]);
-
-    res.redirect('/social');
-  } catch (err) {
-    console.error('Error deleting post:', err);
+  }catch(e){
+    console.error(e);
     res.status(500).send('Failed to delete post.');
   }
 });
 
-// Social route (updated to include likes and comments)
-app.get('/social', auth, async (req, res) => {
-  try {
-    const posts = await db.any(
-      `SELECT p.*, 
-              s.username, 
-              s.profile_photo AS avatar, 
-              p.user_id,
-              (SELECT COUNT(*) FROM likes WHERE post_id = p.post_id) AS like_count,
-              (SELECT COALESCE(json_agg(json_build_object(
-                            'comment_id', c.comment_id, 
-                            'comment', c.comment, 
-                            'username', s2.username,
-                            'avatar', s2.profile_photo
-                           )), '[]'::json)
-               FROM comments c 
-               JOIN students s2 ON c.user_id = s2.student_id 
-               WHERE c.post_id = p.post_id) AS comments
-         FROM posts p
-         JOIN students s ON p.user_id = s.student_id
-         ORDER BY p.created_at DESC`
+// Like / Unlike
+app.post('/like-post/:id',auth,async(req,res)=>{
+  const pid=req.params.id, uid=req.session.user.id;
+  try{
+    const l=await db.oneOrNone(
+      'SELECT like_id FROM likes WHERE post_id=$1 AND user_id=$2',
+      [pid,uid]
     );
+    if(l) await db.none('DELETE FROM likes WHERE like_id=$1',[l.like_id]);
+    else   await db.none('INSERT INTO likes(post_id,user_id) VALUES($1,$2)',[pid,uid]);
 
-    const formattedPosts = posts.map(post => ({
-      id: post.post_id, // for delete action and reference in like/comment endpoints
-      imageUrl: post.image_url,
-      caption: post.caption,
-      createdAt: post.created_at,
-      likes: post.like_count,
-      comments: post.comments, // array of comment objects
-      user: {
-        id: post.user_id,
-        username: post.username,
-        avatar: post.avatar || '/images/cardinal-bird-branch.jpg'
-      }
+    const {count}=await db.one('SELECT COUNT(*) FROM likes WHERE post_id=$1',[pid]);
+    res.json({success:true,likeCount:count});
+  }catch(e){
+    console.error(e);
+    res.status(500).json({success:false});
+  }
+});
+
+// Add comment (returns id & count)
+app.post('/comment-post/:id',auth,async(req,res)=>{
+  const pid=req.params.id, uid=req.session.user.id, {comment}=req.body;
+  if(!comment || !comment.trim())
+    return res.status(400).json({success:false,error:'Empty'});
+
+  try{
+    const {comment_id}=await db.one(
+      'INSERT INTO comments(post_id,user_id,comment) VALUES($1,$2,$3) RETURNING comment_id',
+      [pid,uid,comment]
+    );
+    const {count}=await db.one('SELECT COUNT(*) FROM comments WHERE post_id=$1',[pid]);
+    res.json({success:true,commentId:comment_id,commentCount:count});
+  }catch(e){
+    console.error(e);
+    res.status(500).json({success:false});
+  }
+});
+
+// Delete comment
+app.post('/delete-comment/:id',auth,async(req,res)=>{
+  const cid=req.params.id, uid=req.session.user.id;
+  try{
+    const c=await db.oneOrNone(
+      'SELECT comment_id FROM comments WHERE comment_id=$1 AND user_id=$2',
+      [cid,uid]
+    );
+    if(!c){
+      const msg='Unauthorized';
+      return req.accepts('json')
+        ? res.status(403).json({success:false,error:msg})
+        : res.status(403).send(msg);
+    }
+    await db.none('DELETE FROM comments WHERE comment_id=$1',[cid]);
+    return req.accepts('json')
+      ? res.json({success:true})
+      : res.redirect('/social');
+  }catch(e){
+    console.error(e);
+    const msg='Failed';
+    req.accepts('json')
+      ? res.status(500).json({success:false,error:msg})
+      : res.status(500).send(msg);
+  }
+});
+
+// Social feed
+app.get('/social',auth,async(req,res)=>{
+  try{
+    const posts=await db.any(`
+      SELECT p.*,s.username,s.profile_photo AS avatar,p.user_id,
+             (SELECT COUNT(*) FROM likes WHERE post_id=p.post_id) AS like_count,
+             (SELECT COALESCE(json_agg(json_build_object(
+                 'comment_id',c.comment_id,
+                 'comment'   ,c.comment,
+                 'username'  ,s2.username,
+                 'avatar'    ,s2.profile_photo
+             )),'[]'::json)
+              FROM comments c
+              JOIN students s2 ON c.user_id=s2.student_id
+              WHERE c.post_id=p.post_id) AS comments
+        FROM posts p
+        JOIN students s ON p.user_id=s.student_id
+        ORDER BY p.created_at DESC`);
+    const formatted=posts.map(p=>({
+      id:p.post_id,imageUrl:p.image_url,caption:p.caption,createdAt:p.created_at,
+      likes:p.like_count,comments:p.comments,
+      user:{id:p.user_id,username:p.username,
+            avatar:p.avatar||'/images/cardinal-bird-branch.jpg'}
     }));
-
-    res.render('pages/social', {
-      title: 'Social',
-      user: req.session.user,
-      posts: formattedPosts
-    });
-  } catch (err) {
-    console.error('Error loading social feed:', err);
-    res.render('pages/social', {
-      title: 'Social',
-      posts: [],
-      error: 'Could not load posts at this time.'
-    });
+    res.render('pages/social',{title:'Social',user:req.session.user,posts:formatted});
+  }catch(e){
+    console.error(e);
+    res.render('pages/social',{title:'Social',posts:[],error:'Could not load posts'});
   }
 });
 
-// Toggle Like endpoint
-app.post('/like-post/:id', auth, async (req, res) => {
-  const postId = req.params.id;
-  const userId = req.session.user.id;
-  try {
-    // Check if the user already liked this post
-    const existingLike = await db.oneOrNone(
-      'SELECT like_id FROM likes WHERE post_id = $1 AND user_id = $2',
-      [postId, userId]
-    );
-
-    if (existingLike) {
-      // Remove the like (unlike)
-      await db.none('DELETE FROM likes WHERE like_id = $1', [existingLike.like_id]);
-    } else {
-      // Insert the like
-      await db.none('INSERT INTO likes (post_id, user_id) VALUES ($1, $2)', [postId, userId]);
-    }
-    // Get the updated count of likes
-    const result = await db.one('SELECT COUNT(*) FROM likes WHERE post_id = $1', [postId]);
-    res.json({ success: true, likeCount: result.count });
-  } catch (error) {
-    console.error('Error toggling like:', error);
-    res.status(500).json({ success: false, error: 'Failed to toggle like.' });
-  }
-});
-
-// Submit Comment endpoint
-app.post('/comment-post/:id', auth, async (req, res) => {
-  const postId = req.params.id;
-  const userId = req.session.user.id;
-  const { comment } = req.body;
-
-  if (!comment || comment.trim() === '') {
-    return res.status(400).json({ success: false, error: 'Comment cannot be empty.' });
-  }
-
-  try {
-    // Insert the comment into the database
-    await db.none(
-      'INSERT INTO comments (post_id, user_id, comment) VALUES ($1, $2, $3)',
-      [postId, userId, comment]
-    );
-    // Get the updated comment count
-    const result = await db.one('SELECT COUNT(*) FROM comments WHERE post_id = $1', [postId]);
-    res.json({ success: true, commentCount: result.count });
-  } catch (error) {
-    console.error('Error adding comment:', error);
-    res.status(500).json({ success: false, error: 'Failed to add comment.' });
-  }
-});
-
-// Home route
-app.get('/', async (req, res) => {
-  try {
-    const websiteSettings = await db.oneOrNone(
-      'SELECT theme, language FROM website_settings WHERE id = 1'
-    );
-    const theme = websiteSettings ? websiteSettings.theme : 'light';
-    const language = websiteSettings ? websiteSettings.language : 'en';
-
-    res.render('pages/home', {
-      title: 'Home',
-      user: req.session.user,
-      theme: theme,
-      language: language
+// ────────────────────────────────────────────────
+//            HOME / PROFILE / SETTINGS
+// ────────────────────────────────────────────────
+app.get('/',async(req,res)=>{
+  try{
+    const ws=await db.oneOrNone('SELECT theme,language FROM website_settings WHERE id=1');
+    res.render('pages/home',{
+      title:'Home',
+      user:req.session.user,
+      theme:ws?ws.theme:'light',
+      language:ws?ws.language:'en'
     });
-  } catch (error) {
-    console.error('Error fetching website settings:', error);
-    res.render('pages/home', {
-      title: 'Home',
-      user: req.session.user,
-      theme: 'light',
-      language: 'en'
+  }catch(e){
+    console.error(e);
+    res.render('pages/home',{title:'Home',user:req.session.user,theme:'light',language:'en'});
+  }
+});
+
+app.get('/profile',auth,async(req,res)=>{
+  try{
+    const s=await db.one('SELECT * FROM students WHERE student_id=$1',[req.session.user.id]);
+    req.session.user.bio=s.bio;
+    res.render('pages/profile',{
+      title:'Your Profile',
+      user:s,
+      profileImage:s.profile_photo||'/images/cardinal-bird-branch.jpg',
+      bio:s.bio
+    });
+  }catch(e){
+    console.error(e);
+    res.render('pages/profile',{
+      title:'Your Profile',
+      user:req.session.user,
+      profileImage:req.session.user.profileImage||'/images/cardinal-bird-branch.jpg',
+      error:'Unable to load profile'
     });
   }
 });
 
-// Login Routes
-app.get('/login', (req, res) => {
-  res.render('pages/login', { title: 'Login' });
-});
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    const user = await db.oneOrNone(
-      `SELECT student_id, email, username, first_name, last_name, password, profile_photo
-       FROM students
-       WHERE email = $1`,
-      [email]
-    );
-
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-      return res.render('pages/login', {
-        title: 'Login',
-        error: 'Invalid email or password',
-        formData: { email }
-      });
-    }
-
-    req.session.user = {
-      id: user.student_id,
-      email: user.email,
-      username: user.username,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      profileImage: user.profile_photo || '/images/cardinal-bird-branch.jpg'
-    };
-
+app.post('/edit-profile',auth,async(req,res)=>{
+  const {bio}=req.body;
+  try{
+    await db.none('UPDATE students SET bio=$1 WHERE student_id=$2',[bio,req.session.user.id]);
+    req.session.user.bio=bio;
     res.redirect('/profile');
-  } catch (err) {
-    console.error('Login error:', err);
-    res.render('pages/login', {
-      title: 'Login',
-      error: 'Login failed. Please try again.',
-      formData: { email }
-    });
+  }catch(e){
+    console.error(e);
+    res.render('pages/profile',{title:'Your Profile',user:req.session.user,error:'Failed to update profile'});
   }
 });
 
-// Profile Route
-app.get('/profile', auth, async (req, res) => {
-  try {
-    const student = await db.one(
-      'SELECT student_id, first_name, last_name, email, username, bio, created_at, profile_photo FROM students WHERE student_id = $1',
-      [req.session.user.id]
-    );
+app.get('/settings',(req,res)=>res.render('pages/settings',{title:'Settings'}));
+app.get('/search',(req,res)=>res.render('pages/search',{title:'Search'}));
+app.get('/about',(req,res)=>res.render('pages/about',{title:'About',user:req.session.user}));
 
-    req.session.user.bio = student.bio;
-
-    res.render('pages/profile', {
-      title: 'Your Profile',
-      user: student,
-      profileImage: student.profile_photo || '/images/cardinal-bird-branch.jpg',
-      bio: student.bio
-    });
-  } catch (error) {
-    console.error('Error fetching profile:', error);
-    const profileImage = req.session.user.profileImage ? req.session.user.profileImage : '/images/cardinal-bird-branch.jpg';
-    res.render('pages/profile', {
-      title: 'Your Profile',
-      user: req.session.user,
-      profileImage,
-      error: 'Unable to load complete profile data'
-    });
+// Save website settings
+app.post('/settings/website',async(req,res)=>{
+  const {theme,language}=req.body;
+  try{
+    await db.none('UPDATE website_settings SET theme=$1,language=$2 WHERE id=1',[theme,language]);
+    res.json({message:'Saved'});
+  }catch(e){
+    console.error(e);
+    res.status(500).json({error:'Failed'});
   }
 });
 
-app.post('/edit-profile', auth, async (req, res) => {
-  console.log("POST /edit-profile route reached");
-  const { bio } = req.body;
-  const userId = req.session.user.id;
-
-  try {
-    await db.none('UPDATE students SET bio = $1 WHERE student_id = $2', [bio, userId]);
-    req.session.user.bio = bio;
-    res.redirect('/profile');
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    res.render('pages/profile', {
-      title: 'Your Profile',
-      user: req.session.user,
-      error: 'Failed to update your profile. Please try again.'
-    });
-  }
-});
-
-// Settings Route
-app.get('/settings', (req, res) => {
-  res.render('pages/settings', {
-    title: 'Settings'
-  });
-});
-
-// Search Route
-app.get('/search', (req, res) => {
-  res.render('pages/search', {
-    title: 'Search'
-  });
-});
-
-// Logout Route
-app.get('/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) console.log('Session destruction error:', err);
-    res.clearCookie('connect.sid');
-    res.render('pages/logout', { title: 'Logging Out' });
-  });
-});
-
-// API endpoint for saving website settings
-app.post('/settings/website', async (req, res) => {
-  const { theme, language } = req.body;
-
-  try {
+// Save user settings
+app.post('/settings/user',auth,async(req,res)=>{
+  const {notifications,timezone}=req.body;
+  try{
     await db.none(
-      `UPDATE website_settings
-       SET theme = $1, language = $2
-       WHERE id = 1`,
-      [theme, language]
+      'UPDATE students SET notifications=$2,timezone=$3 WHERE student_id=$1',
+      [req.session.user.id,notifications==='on',timezone]
     );
-
-    console.log('Website settings saved:', { theme, language });
-    res.json({ message: 'Website settings saved successfully' });
-  } catch (error) {
-    console.error('Error saving website settings:', error);
-    res.status(500).json({ error: 'Failed to save website settings' });
+    res.json({message:'Saved'});
+  }catch(e){
+    console.error(e);
+    res.status(500).json({error:'Failed'});
   }
 });
 
-app.post('/update-profile-image', auth, upload.single('profileImage'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, error: 'No file uploaded.' });
-  }
-
-  try {
-    const userId = req.session.user.id;
-    const profileImageURL = `/uploads/${req.file.filename}`;
-    await db.query('UPDATE students SET profile_photo = $1 WHERE student_id = $2', [profileImageURL, userId]);
-    req.session.user.profileImage = profileImageURL;
-    res.json({ success: true, profileImage: profileImageURL });
-  } catch (err) {
-    console.error('Error updating profile picture:', err);
-    res.status(500).json({ success: false, error: 'Failed to update profile picture.' });
-  }
-});
-
-// API endpoint for saving user-specific settings
-app.post('/settings/user', auth, async (req, res) => {
-  if (!req.session.user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const userId = req.session.user.id;
-  const { notifications, timezone } = req.body;
-
-  try {
-    await db.none(
-      `UPDATE students
-       SET notifications = $2, timezone = $3
-       WHERE student_id = $1`,
-      [userId, notifications === 'on', timezone]
-    );
-
-    res.json({ message: 'User settings saved successfully' });
-  } catch (error) {
-    console.error('Error saving user settings:', error);
-    res.status(500).json({ error: 'Failed to save user settings' });
+// Update profile image
+app.post('/update-profile-image',auth,upload.single('profileImage'),async(req,res)=>{
+  if(!req.file)
+    return res.status(400).json({success:false,error:'No file uploaded.'});
+  try{
+    const url=`/uploads/${req.file.filename}`;
+    await db.none('UPDATE students SET profile_photo=$1 WHERE student_id=$2',
+                  [url,req.session.user.id]);
+    req.session.user.profileImage=url;
+    res.json({success:true,profileImage:url});
+  }catch(e){
+    console.error(e);
+    res.status(500).json({success:false,error:'Failed to update profile picture.'});
   }
 });
 
-// About Route (pass the user for a consistent nav bar)
-app.get('/about', (req, res) => {
-  res.render('pages/about', { title: 'About', user: req.session.user });
-});
-
-// Start Server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// ────────────────────────────────────────────────
+//                    SERVER
+// ────────────────────────────────────────────────
+const PORT=process.env.PORT||3000;
+app.listen(PORT,()=>console.log(`🚀  Server running on port ${PORT}`));
