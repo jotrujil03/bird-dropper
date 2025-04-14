@@ -40,3 +40,21 @@ CREATE TABLE IF NOT EXISTS posts (
 
 -- Optional: Create index on posts.user_id for performance
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+
+-- Create likes table to track which user liked which post.
+CREATE TABLE IF NOT EXISTS likes (
+    like_id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES posts(post_id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (post_id, user_id)  -- Ensures a user can like a post only once.
+);
+
+-- Create comments table to store comments on posts.
+CREATE TABLE IF NOT EXISTS comments (
+    comment_id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES posts(post_id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);

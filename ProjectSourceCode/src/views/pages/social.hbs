@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" />
   <style>
+    /* Base Styles */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Roboto', sans-serif;
@@ -94,6 +95,7 @@
       margin-bottom: 30px;
       overflow: hidden;
       transition: transform 0.2s ease-in-out;
+      position: relative;
     }
     .post:hover {
       transform: translateY(-3px);
@@ -158,13 +160,11 @@
       font-size: 1.2rem;
       color: #777;
     }
-
-    /* Dropdown menu styles */
+    /* Dropdown Menu */
     .options-menu {
       position: relative;
       margin-left: auto;
     }
-
     .options-button {
       background: none;
       border: none;
@@ -172,7 +172,6 @@
       cursor: pointer;
       color: #888;
     }
-
     .options-dropdown {
       display: none;
       position: absolute;
@@ -185,11 +184,9 @@
       padding: 10px;
       z-index: 10;
     }
-
     .options-dropdown form {
       margin: 0;
     }
-
     .options-dropdown button {
       background: none;
       border: none;
@@ -197,14 +194,61 @@
       font-size: 0.95rem;
       cursor: pointer;
     }
-
+    /* Like and Comment Enhancements */
+    .like-btn.liked {
+      color: red;
+      animation: glow 0.5s ease-in-out;
+    }
+    @keyframes glow {
+      0% { filter: drop-shadow(0 0 0px red); }
+      50% { filter: drop-shadow(0 0 10px red); }
+      100% { filter: drop-shadow(0 0 0px red); }
+    }
+    .comment-form {
+      display: none;
+      padding: 10px 15px;
+      border-top: 1px solid #f0f0f0;
+      align-items: center;
+      gap: 10px;
+      background: #fafafa;
+    }
+    .comment-form input.comment-input {
+      flex: 1;
+      padding: 5px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .comment-form button.submit-comment-btn {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    .comments-container {
+      padding: 0 15px 10px;
+    }
+    .comment {
+      display: flex;
+      align-items: baseline;
+      margin-top: 5px;
+    }
+    .comment .username {
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    .comment .comment-text {
+      font-size: 0.9rem;
+    }
     @media (max-width: 600px) {
       .social-header h1 { font-size: 2.2rem; }
       .create-post h2, .feed h2 { font-size: 1.4rem; }
     }
   </style>
 </head>
-<body>
+<body data-username="{{user.username}}">
   <div class="container">
     <header class="social-header">
       <h1>Bird Dropper Social</h1>
@@ -230,10 +274,9 @@
 
     <section class="feed">
       <h2>Recent Posts</h2>
-
       {{#if posts}}
         {{#each posts}}
-          <div class="post">
+          <div class="post" data-post-id="{{id}}">
             <div class="post-header">
               <img src="{{user.avatar}}" alt="User avatar" class="avatar">
               <div class="post-info">
@@ -252,8 +295,6 @@
                   </div>
                 </div>
               {{/if}}
-              
-
             </div>
             <div class="post-image">
               <img src="{{imageUrl}}" alt="{{caption}}">
@@ -262,8 +303,28 @@
               <p>{{caption}}</p>
             </div>
             <div class="post-actions">
-              <button class="like-btn"><i class="fa fa-heart"></i> {{likes}}</button>
-              <button class="comment-btn"><i class="fa fa-comment"></i> {{comments.length}}</button>
+              <button class="like-btn" data-liked="false">
+                <i class="fa fa-heart"></i> <span class="like-count">{{likes}}</span>
+              </button>
+              <button class="comment-btn">
+                <i class="fa fa-comment"></i> <span class="comment-count">{{comments.length}}</span>
+              </button>
+            </div>
+            <!-- Existing comments -->
+            <div class="comments-container">
+              {{#if comments}}
+                {{#each comments}}
+                  <div class="comment">
+                    <span class="username">{{username}}</span>
+                    <span class="comment-text">{{comment}}</span>
+                  </div>
+                {{/each}}
+              {{/if}}
+            </div>
+            <!-- Hidden comment form -->
+            <div class="comment-form">
+              <input type="text" placeholder="Add a comment..." class="comment-input">
+              <button class="submit-comment-btn">Post</button>
             </div>
           </div>
         {{/each}}
@@ -276,25 +337,107 @@
   </div>
 
   <script>
+    // Dropdown menu functionality
     function toggleDropdown(button) {
       const dropdown = button.nextElementSibling;
       const isVisible = dropdown.style.display === "block";
-
       // Close all open dropdowns
       document.querySelectorAll('.options-dropdown').forEach(menu => {
         menu.style.display = "none";
       });
-
       // Toggle current dropdown
       dropdown.style.display = isVisible ? "none" : "block";
     }
-
     window.addEventListener('click', function (e) {
       if (!e.target.closest('.options-menu')) {
         document.querySelectorAll('.options-dropdown').forEach(menu => {
           menu.style.display = 'none';
         });
       }
+    });
+
+    // Like button functionality
+    document.querySelectorAll('.like-btn').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const postElement = this.closest('.post');
+        const postId = postElement.getAttribute('data-post-id');
+        fetch(`/like-post/${postId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const liked = this.getAttribute('data-liked') === 'true';
+            // Toggle liked state and update UI accordingly
+            if (!liked) {
+              this.setAttribute('data-liked', 'true');
+              this.classList.add('liked');
+            } else {
+              this.setAttribute('data-liked', 'false');
+              this.classList.remove('liked');
+            }
+            this.querySelector('.like-count').textContent = data.likeCount;
+          } else {
+            alert('Error processing like.');
+          }
+        })
+        .catch(error => console.error('Error:', error));
+      });
+    });
+
+    // Toggle comment form visibility on comment button click
+    document.querySelectorAll('.comment-btn').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const postElement = this.closest('.post');
+        const commentForm = postElement.querySelector('.comment-form');
+        // Toggle the comment form display as a flex container
+        commentForm.style.display = (commentForm.style.display === 'flex') ? 'none' : 'flex';
+        if (commentForm.style.display === 'flex') {
+          commentForm.querySelector('.comment-input').focus();
+        }
+      });
+    });
+
+    // Handle comment submission
+    document.querySelectorAll('.submit-comment-btn').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const postElement = this.closest('.post');
+        const postId = postElement.getAttribute('data-post-id');
+        const commentInput = postElement.querySelector('.comment-input');
+        const commentText = commentInput.value.trim();
+        if (commentText === '') return;
+        fetch(`/comment-post/${postId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comment: commentText })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Append the new comment to the comments container
+            const commentsContainer = postElement.querySelector('.comments-container');
+            const commentEl = document.createElement('div');
+            commentEl.classList.add('comment');
+            const currentUser = document.body.getAttribute('data-username') || 'You';
+            commentEl.innerHTML = '<span class="username">' + currentUser + '</span> <span class="comment-text">' + commentText + '</span>';
+            commentsContainer.appendChild(commentEl);
+            // Update comment count
+            const commentCountEl = postElement.querySelector('.comment-count');
+            let count = parseInt(commentCountEl.textContent);
+            commentCountEl.textContent = count + 1;
+            // Clear and hide comment form
+            commentInput.value = '';
+            postElement.querySelector('.comment-form').style.display = 'none';
+          } else {
+            alert('Error posting comment.');
+          }
+        })
+        .catch(error => console.error('Error:', error));
+      });
     });
   </script>
 </body>

@@ -1,58 +1,51 @@
-// ********************** Initialize server **********************************
-
-const server = require('../src/index'); //TODO: Make sure the path to your index.js is correctly added
-
-// ********************** Import Libraries ***********************************
-
-const chai = require('chai'); // Chai HTTP provides an interface for live integration testing of the API's.
+const server = require('../src/index');
+const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.should();
 chai.use(chaiHttp);
-const {assert, expect} = chai;
+const { expect } = chai;
 
-// ********************** DEFAULT WELCOME TESTCASE ****************************
+describe('Bird Dropper App', () => {
+  const testEmail = `test${Date.now()}@bird.com`;
+  const password = 'Password123';
 
-describe('Server!', () => {
-  // Sample test case given to test / endpoint.
-  it('Returns the default welcome message', done => {
-    chai
-      .request(server)
-      .get('/welcome')
+  it('should render the home page', done => {
+    chai.request(server)
+      .get('/')
       .end((err, res) => {
         expect(res).to.have.status(200);
-        expect(res.body.status).to.equals('success');
-        assert.strictEqual(res.body.message, 'Welcome!');
+        expect(res.text).to.include('Bird Dropper');
+        done();
+      });
+  });
+
+  it('should register a new user and redirect to profile', done => {
+    chai.request(server)
+      .post('/register')
+      .type('form')
+      .send({
+        first_name: 'Test',
+        last_name: 'User',
+        email: testEmail,
+        username: `testuser${Date.now()}`,
+        password: password,
+        confirm_password: password
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(200); // or 302 if redirect happens
+        expect(res.redirects[0] || res.text).to.include('/profile');
+        done();
+      });
+  });
+
+  it('should fail to login with wrong credentials', done => {
+    chai.request(server)
+      .post('/login')
+      .type('form')
+      .send({ email: 'wrong@email.com', password: 'wrongpass' })
+      .end((err, res) => {
+        expect(res.text).to.include('Invalid email or password');
         done();
       });
   });
 });
-
-// *********************** TODO: WRITE 2 UNIT TESTCASES **************************
-describe('Login API', () => {
-  it('should login user with valid credentials', done => {
-    chai
-      .request(server)
-      .post('/login')
-      .send({ username: 'testuser', password: 'testpass123' })
-      .end((err, res) => {
-        expect(res).to.have.status(200);
-        expect(res.body.message).to.equal('Login successful');
-        done();
-      });
-  });
-
-  it('should reject login with invalid credentials', done => {
-    chai
-      .request(server)
-      .post('/login')
-      .send({ username: 'wronguser', password: 'wrongpass' })
-      .end((err, res) => {
-        expect(res).to.have.status(401);
-        expect(res.body.message).to.equal('Invalid username or password');
-        done();
-      });
-  });
-});
-
-
-// ********************************************************************************

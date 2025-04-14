@@ -161,7 +161,6 @@ app.post('/register', async (req, res) => {
       [first_name, last_name, email, username, hashedPassword, '']
     );
 
-    // If no profile photo is set, fallback to default image
     req.session.user = {
       id: newUser.student_id,
       username: newUser.username,
@@ -233,25 +232,38 @@ app.post('/delete-post/:id', auth, async (req, res) => {
   }
 });
 
-// Social route (updated to include user id in each post object)
+// Social route (updated to include likes and comments)
 app.get('/social', auth, async (req, res) => {
   try {
     const posts = await db.any(
-      `SELECT p.*, s.username, s.profile_photo AS avatar, p.user_id
-       FROM posts p
-       JOIN students s ON p.user_id = s.student_id
-       ORDER BY p.created_at DESC`
+      `SELECT p.*, 
+              s.username, 
+              s.profile_photo AS avatar, 
+              p.user_id,
+              (SELECT COUNT(*) FROM likes WHERE post_id = p.post_id) AS like_count,
+              (SELECT COALESCE(json_agg(json_build_object(
+                            'comment_id', c.comment_id, 
+                            'comment', c.comment, 
+                            'username', s2.username,
+                            'avatar', s2.profile_photo
+                           )), '[]'::json)
+               FROM comments c 
+               JOIN students s2 ON c.user_id = s2.student_id 
+               WHERE c.post_id = p.post_id) AS comments
+         FROM posts p
+         JOIN students s ON p.user_id = s.student_id
+         ORDER BY p.created_at DESC`
     );
 
     const formattedPosts = posts.map(post => ({
-      id: post.post_id, // for delete action
+      id: post.post_id, // for delete action and reference in like/comment endpoints
       imageUrl: post.image_url,
       caption: post.caption,
       createdAt: post.created_at,
-      likes: 0, // Placeholder for future like feature
-      comments: [], // Placeholder for future comments
+      likes: post.like_count,
+      comments: post.comments, // array of comment objects
       user: {
-        id: post.user_id, // Added author id for robust comparison
+        id: post.user_id,
         username: post.username,
         avatar: post.avatar || '/images/cardinal-bird-branch.jpg'
       }
@@ -269,6 +281,58 @@ app.get('/social', auth, async (req, res) => {
       posts: [],
       error: 'Could not load posts at this time.'
     });
+  }
+});
+
+// Toggle Like endpoint
+app.post('/like-post/:id', auth, async (req, res) => {
+  const postId = req.params.id;
+  const userId = req.session.user.id;
+  try {
+    // Check if the user already liked this post
+    const existingLike = await db.oneOrNone(
+      'SELECT like_id FROM likes WHERE post_id = $1 AND user_id = $2',
+      [postId, userId]
+    );
+
+    if (existingLike) {
+      // Remove the like (unlike)
+      await db.none('DELETE FROM likes WHERE like_id = $1', [existingLike.like_id]);
+    } else {
+      // Insert the like
+      await db.none('INSERT INTO likes (post_id, user_id) VALUES ($1, $2)', [postId, userId]);
+    }
+    // Get the updated count of likes
+    const result = await db.one('SELECT COUNT(*) FROM likes WHERE post_id = $1', [postId]);
+    res.json({ success: true, likeCount: result.count });
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    res.status(500).json({ success: false, error: 'Failed to toggle like.' });
+  }
+});
+
+// Submit Comment endpoint
+app.post('/comment-post/:id', auth, async (req, res) => {
+  const postId = req.params.id;
+  const userId = req.session.user.id;
+  const { comment } = req.body;
+
+  if (!comment || comment.trim() === '') {
+    return res.status(400).json({ success: false, error: 'Comment cannot be empty.' });
+  }
+
+  try {
+    // Insert the comment into the database
+    await db.none(
+      'INSERT INTO comments (post_id, user_id, comment) VALUES ($1, $2, $3)',
+      [postId, userId, comment]
+    );
+    // Get the updated comment count
+    const result = await db.one('SELECT COUNT(*) FROM comments WHERE post_id = $1', [postId]);
+    res.json({ success: true, commentCount: result.count });
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ success: false, error: 'Failed to add comment.' });
   }
 });
 
