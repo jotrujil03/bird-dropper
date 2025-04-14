@@ -14,136 +14,93 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Roboto', sans-serif; background: #f1f3f6; color: #333; line-height: 1.6; }
     .container { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+
+    /* Header */
     .social-header { text-align: center; margin-bottom: 40px; }
     .social-header h1 { font-family: 'Montserrat', sans-serif; font-size: 2.8rem; color: #222; margin-bottom: 10px; }
-    .social-header p { font-size: 1.2rem; color: #555; }
+    .social-header p  { font-size: 1.2rem; color: #555; }
 
-    /* Card for the post form and posts */
+    /* Card */
     .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.1); padding: 20px; margin-bottom: 40px; }
-    .create-post h2 { font-size: 1.6rem; margin-bottom: 20px; color: #333; }
-    .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; font-weight: 600; margin-bottom: 8px; }
-    .form-group input[type=file],
-    .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    .form-group textarea { resize: vertical; min-height: 80px; }
-    .btn-post { display: inline-block; background: #007bff; color: #fff; padding: 12px 25px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .3s; }
-    .btn-post:hover { background: #0056b3; }
 
-    /* Feed and posts */
+    /* Post feed */
     .feed h2 { font-size: 1.8rem; margin-bottom: 20px; color: #333; }
-    .post { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.07); margin-bottom: 30px; overflow: hidden; transition: transform .2s; }
+    .post { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.07); margin-bottom: 30px; overflow: visible; transition: transform .2s; }
     .post:hover { transform: translateY(-3px); }
-    .post-header { display: flex; align-items: center; padding: 15px; }
+
+    .post-header { display: flex; align-items: center; padding: 15px; position: relative; }
     .post-header img.avatar { width: 48px; height: 48px; border-radius: 50%; margin-right: 15px; }
     .post-info h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 3px; color: #222; }
     .post-info .timestamp { font-size: .9rem; color: #888; }
+
     .post-image img { width: 100%; max-height: 500px; object-fit: cover; display: block; }
     .post-caption { padding: 15px; font-size: 1rem; color: #444; }
+
     .post-actions { padding: 15px; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
     .post-actions button { background: none; border: none; color: #555; font-size: 1rem; display: flex; align-items: center; gap: 5px; cursor: pointer; transition: color .3s; }
     .post-actions button:hover { color: #007bff; }
+
     .no-posts { text-align: center; padding: 40px 0; font-size: 1.2rem; color: #777; }
-    .options-menu { margin-left: auto; position: relative; }
-    .options-button { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #888; }
-    .options-dropdown { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15); padding: 10px; z-index: 10; }
+
+    /* Post options (delete‑post) */
+    .options-menu       { margin-left: auto; position: relative; }
+    .options-button     { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #888; }
+    .options-dropdown   { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15); padding: 10px; z-index: 20; }
     .options-dropdown button { background: none; border: none; color: red; font-size: .95rem; cursor: pointer; }
+
+    /* Likes */
     .like-btn.liked { color: red; animation: glow .5s; }
     @keyframes glow { 0% { filter: drop-shadow(0 0 0 red); } 50% { filter: drop-shadow(0 0 10px red); } 100% { filter: drop-shadow(0 0 0 red); } }
+
+    /* Comments */
+    .comments-container { padding: 0 15px 10px; }
+    .comment { display: flex; align-items: baseline; margin-top: 5px; position: relative; }
+    .comment .username  { font-weight: 600; margin-right: 8px; }
+    .comment .comment-text { font-size: .9rem; }
+
+    /* Comment options */
+    .comment-options-menu      { position: absolute; right: 5px; top: 0; }
+    .comment-options-btn       { background: none; border: none; font-size: 1rem; cursor: pointer; display: block; }
+    .comment-options-dropdown  { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15); padding: 5px; z-index: 30; }
+    .comment-options-dropdown button { background: none; border: none; color: red; cursor: pointer; font-size: 1rem; }
+
+    /* Comment form */
     .comment-form { display: none; padding: 10px 15px; border-top: 1px solid #f0f0f0; align-items: center; gap: 10px; background: #fafafa; }
     .comment-input { flex: 1; padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: .9rem; }
     .submit-comment-btn { padding: 5px 10px; border: none; border-radius: 4px; background: #007bff; color: #fff; cursor: pointer; }
-    .comments-container { padding: 0 15px 10px; }
-    .comment { display: flex; align-items: baseline; margin-top: 5px; position: relative; }
-    .comment .username { font-weight: 600; margin-right: 8px; }
-    .comment .comment-text { font-size: .9rem; }
-    .comment-options-menu {
-      position: absolute;
-      right: 5px;
-      top: 0;
-    }
-    .comment-options-btn {
-      display: none;
-      background: none;
-      border: none;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    .comment:hover .comment-options-btn {
-      display: block;
-    }
-    .comment-options-dropdown {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 100%;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      padding: 5px;
-      z-index: 100;
-    }
-    .comment-options-dropdown button {
-      background: none;
-      border: none;
-      color: red;
-      cursor: pointer;
-      font-size: 1rem;
-    }
+
     @media(max-width:600px) {
       .social-header h1 { font-size: 2.2rem; }
-      .feed h2 { font-size: 1.4rem; }
+      .feed h2          { font-size: 1.4rem; }
     }
 
-    /* Modal styling */
-    .modal {
-      display: none; /* Hidden by default */
-      position: fixed;
-      z-index: 200;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background: rgba(0,0,0,0.5);
-    }
-    .modal-content {
-      background: #fff;
-      margin: 10% auto;
-      padding: 20px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 600px;
-      position: relative;
-    }
-    .modal-close {
-      position: absolute;
-      top: 0px;
-      right: 9px;
-      font-size: 1.5rem;
-      cursor: pointer;
-    }
+    /* Modal */
+    .modal { display:none; position:fixed; z-index:200; left:0; top:0; width:100%; height:100%; overflow:auto; background:rgba(0,0,0,0.5); }
+    .modal-content { background:#fff; margin:5% auto; padding:0; border-radius:16px; width:90%; max-width:600px; position:relative; overflow:hidden; }
+    .modal-close   { position:absolute; top:14px; right:20px; font-size:1.7rem; cursor:pointer; color:#666; }
 
-    /* Floating Action Button */
-    .open-modal-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      font-size: 2rem;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 300;
-      transition: background 0.3s;
-    }
-    .open-modal-btn:hover {
-      background: #0056b3;
-    }
+    /* Create‑post card */
+    .create-post { padding:40px 35px 45px; }
+    .create-post h2 { font-family:'Montserrat',sans-serif; font-size:2rem; text-align:center; margin-bottom:30px; color:#222; }
+
+    .form-group { margin-bottom:22px; display:flex; flex-direction:column; }
+    .form-group label { font-weight:600; margin-bottom:8px; font-size:1rem; }
+
+    /* custom file input */
+    .file-wrapper { position:relative; display:flex; }
+    .file-wrapper input[type="file"] { opacity:0; position:absolute; inset:0; width:100%; cursor:pointer; }
+    .file-display { flex:1; padding:12px 15px; background:#f1f3f6; border:2px dashed #bbb; border-radius:10px; text-align:center; font-size:.95rem; color:#666; transition:border-color .3s; }
+    .file-wrapper:hover .file-display { border-color:#007bff; }
+
+    textarea { min-height:130px; resize:vertical; padding:12px 15px; border:1px solid #ccc; border-radius:10px; font-size:1rem; }
+
+    .btn-post { width:100%; padding:14px; background:#007bff; color:#fff; border:none; border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(0,123,255,.25); transition:background .3s,transform .15s; }
+    .btn-post:hover { background:#0065d1; }
+    .btn-post:active { transform:translateY(2px); }
+
+    /* FAB */
+    .open-modal-btn { position:fixed; bottom:24px; right:24px; background:#007bff; color:#fff; border:none; border-radius:50%; width:80px; height:80px; font-size:2.6rem; line-height:80px; text-align:center; cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,0.3); z-index:300; transition:background .3s, transform .15s; }
+    .open-modal-btn:hover { background:#0056b3; }
   </style>
 </head>
 
@@ -154,7 +111,7 @@
       <p>Share your bird sightings with the community!</p>
     </header>
 
-    <!-- FEED moved higher now that the create-post form is in the modal -->
+    <!-- FEED -->
     <section class="feed">
       <h2>Recent Posts</h2>
       {{#if posts}}
@@ -180,12 +137,8 @@
               {{/if}}
             </div>
 
-            <div class="post-image">
-              <img src="{{imageUrl}}" alt="{{caption}}">
-            </div>
-            <div class="post-caption">
-              <p>{{caption}}</p>
-            </div>
+            <div class="post-image"><img src="{{imageUrl}}" alt="{{caption}}"></div>
+            <div class="post-caption"><p>{{caption}}</p></div>
 
             <div class="post-actions">
               <button class="like-btn" data-liked="false">
@@ -203,13 +156,9 @@
                   <span class="comment-text">{{comment}}</span>
                   {{#if (eq username @root.user.username)}}
                     <div class="comment-options-menu">
-                      <button class="comment-options-btn">
-                        <i class="fa fa-ellipsis-h"></i>
-                      </button>
+                      <button class="comment-options-btn"><i class="fa fa-ellipsis-h"></i></button>
                       <div class="comment-options-dropdown">
-                        <button class="delete-comment-btn">
-                          <i class="fa fa-trash"></i>
-                        </button>
+                        <button class="delete-comment-btn"><i class="fa fa-trash"></i></button>
                       </div>
                     </div>
                   {{/if}}
@@ -229,7 +178,7 @@
     </section>
   </div>
 
-  <!-- Modal for Share Your Sighting -->
+  <!-- Modal -->
   <div id="postModal" class="modal">
     <div class="modal-content">
       <span class="modal-close" onclick="closeModal()">&times;</span>
@@ -237,11 +186,14 @@
         <h2>Share Your Sighting</h2>
         <form action="/post" method="POST" enctype="multipart/form-data">
           <div class="form-group">
-            <label for="photo">Upload a photo:</label>
-            <input type="file" id="photo" name="photo" accept="image/*" required>
+            <label for="photo">Upload a photo</label>
+            <div class="file-wrapper">
+              <span class="file-display" id="fileDisplay">Click or drag image here…</span>
+              <input type="file" id="photo" name="photo" accept="image/*" required>
+            </div>
           </div>
           <div class="form-group">
-            <label for="caption">Caption:</label>
+            <label for="caption">Caption</label>
             <textarea id="caption" name="caption" placeholder="What bird did you see? Where? When?" required></textarea>
           </div>
           <button type="submit" class="btn-post">Share Post</button>
@@ -250,12 +202,11 @@
     </div>
   </div>
 
-  <!-- Floating button to open the modal -->
   <button class="open-modal-btn" onclick="openModal()">+</button>
 
-  <!-- SCRIPTS -->
+  <!-- JS -->
   <script>
-    /* Dropdown menu for posts */
+    /* ─── Post dropdown (delete‑post) ─── */
     function toggleDropdown(btn) {
       const dd = btn.nextElementSibling;
       const open = dd.style.display === 'block';
@@ -268,7 +219,7 @@
       }
     });
 
-    /* Like button functionality */
+    /* ─── Likes ─── */
     document.querySelectorAll('.like-btn').forEach(btn => {
       btn.addEventListener('click', function(e) {
         e.preventDefault();
@@ -287,7 +238,7 @@
       });
     });
 
-    /* Toggle comment form */
+    /* ─── Show / hide comment form ─── */
     document.querySelectorAll('.comment-btn').forEach(btn => {
       btn.addEventListener('click', function(e) {
         e.preventDefault();
@@ -297,7 +248,7 @@
       });
     });
 
-    /* Add comment (returns real ID) */
+    /* ─── Add comment ─── */
     document.querySelectorAll('.submit-comment-btn').forEach(btn => {
       btn.addEventListener('click', function(e) {
         e.preventDefault();
@@ -317,15 +268,16 @@
             const currentUser = document.body.dataset.username;
             const c = document.createElement('div');
             c.className = 'comment';
-            c.dataset.commentId = d.commentId; // real DB id
-            c.innerHTML = `<span class="username">${currentUser}</span>
-                           <span class="comment-text">${text}</span>
-                           <div class="comment-options-menu">
-                             <button class="comment-options-btn"><i class="fa fa-ellipsis-h"></i></button>
-                             <div class="comment-options-dropdown">
-                               <button class="delete-comment-btn"><i class="fa fa-trash"></i></button>
-                             </div>
-                           </div>`;
+            c.dataset.commentId = d.commentId;
+            c.innerHTML = `
+              <span class="username">${currentUser}</span>
+              <span class="comment-text">${text}</span>
+              <div class="comment-options-menu">
+                <button class="comment-options-btn"><i class="fa fa-ellipsis-h"></i></button>
+                <div class="comment-options-dropdown">
+                  <button class="delete-comment-btn"><i class="fa fa-trash"></i></button>
+                </div>
+              </div>`;
             post.querySelector('.comments-container').appendChild(c);
             post.querySelector('.comment-count').textContent =
               parseInt(post.querySelector('.comment-count').textContent) + 1;
@@ -338,31 +290,34 @@
       });
     });
 
-    /* Toggle comment options dropdown */
+    /* ─── Comment options (three‑dot menu & delete) ─── */
     function toggleCommentDropdown(btn) {
       const dropdown = btn.nextElementSibling;
       const open = dropdown.style.display === 'block';
       document.querySelectorAll('.comment-options-dropdown').forEach(menu => menu.style.display = 'none');
       dropdown.style.display = open ? 'none' : 'block';
     }
-    document.querySelectorAll('.comment-options-btn').forEach(btn => {
-      btn.addEventListener('click', function(e) {
+
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.comment-options-btn');
+      if (btn) {
         e.stopPropagation();
         toggleCommentDropdown(btn);
-      });
+      }
     });
+
     window.addEventListener('click', function(e) {
       if (!e.target.closest('.comment-options-menu')) {
         document.querySelectorAll('.comment-options-dropdown').forEach(menu => menu.style.display = 'none');
       }
     });
 
-    /* Delete comment functionality */
+    /* Delete comment */
     document.addEventListener('click', function(e) {
       if (!e.target.closest('.delete-comment-btn')) return;
       e.preventDefault();
       const comment = e.target.closest('.comment');
-      const id = comment.dataset.commentId;
+      const id      = comment.dataset.commentId;
       fetch(`/delete-comment/${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
@@ -379,20 +334,20 @@
       }).catch(() => alert('Failed to delete comment.'));
     });
 
-    /* Modal open/close functions */
-    function openModal() {
-      document.getElementById('postModal').style.display = 'block';
-    }
-    function closeModal() {
-      document.getElementById('postModal').style.display = 'none';
-    }
-    // Close modal if clicking outside the modal-content
-    window.onclick = function(event) {
-      var modal = document.getElementById('postModal');
-      if (event.target === modal) {
-        modal.style.display = 'none';
-      }
-    }
+    /* ─── Modal ─── */
+    function openModal()  { document.getElementById('postModal').style.display = 'block'; }
+    function closeModal() { document.getElementById('postModal').style.display = 'none'; }
+    window.onclick = function(e) {
+      const modal = document.getElementById('postModal');
+      if (e.target === modal) modal.style.display = 'none';
+    };
+
+    /* custom file input display */
+    const fileInput = document.getElementById('photo');
+    const fileDisplay = document.getElementById('fileDisplay');
+    fileInput.addEventListener('change', () => {
+      fileDisplay.textContent = fileInput.files[0] ? fileInput.files[0].name : 'Click or drag image here…';
+    });
   </script>
 </body>
 </html>

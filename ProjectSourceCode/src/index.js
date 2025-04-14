@@ -4,7 +4,6 @@
 // 14‑Apr‑2025: merged like/comment AJAX routes **and** added automatic
 //              image‑file cleanup when a post is deleted.
 
-
 // ──────────────────  DEPENDENCIES  ──────────────────
 const express    = require('express');
 const app        = express();
@@ -16,132 +15,163 @@ const bodyParser = require('body-parser');
 const session    = require('express-session');
 const bcrypt     = require('bcryptjs');
 const multer     = require('multer');
-const sharp      = require('sharp');              // NEW: for image processing
 
 // ──────────────────  MULTER CONFIG  ──────────────────
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, 'resources/uploads')),
+  destination: (req, file, cb) => cb(null, path.join(__dirname,'resources/uploads')),
   filename   : (req, file, cb) =>
-    cb(null, `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`)
+    cb(null, `${file.fieldname}-${Date.now()}-${Math.round(Math.random()*1e9)}${path.extname(file.originalname)}`)
 });
 const upload = multer({ storage });
 
 // ──────────────────  HANDLEBARS  ──────────────────
 const hbs = handlebars.create({
-  extname: 'hbs',
-  layoutsDir: path.join(__dirname, 'views/layouts'),
-  partialsDir: path.join(__dirname, 'views/partials'),
-  helpers: {
-    ifEquals: (a, b, o) => a == b ? o.fn(this) : o.inverse(this),
-    eq: (a, b) => a == b,
-    formatDate: ts => ts
-      ? new Date(ts).toLocaleDateString('en-US', {
-          year: 'numeric', month: 'short', day: 'numeric',
-          hour: '2-digit', minute: '2-digit'
+  extname:'hbs',
+  layoutsDir : path.join(__dirname,'views/layouts'),
+  partialsDir: path.join(__dirname,'views/partials'),
+  helpers:{
+    ifEquals:(a,b,o)=>a==b?o.fn(this):o.inverse(this),
+    eq:(a,b)=>a==b,
+    formatDate:ts=>ts
+      ? new Date(ts).toLocaleDateString('en-US',{
+          year:'numeric',month:'short',day:'numeric',
+          hour:'2-digit',minute:'2-digit'
         })
       : ''
   }
 });
-app.engine('hbs', hbs.engine);
-app.set('view engine', 'hbs');
-app.set('views', path.join(__dirname, 'views'));
+app.engine('hbs',hbs.engine);
+app.set('view engine','hbs');
+app.set('views', path.join(__dirname,'views'));
 
 // ──────────────────  MIDDLEWARE  ──────────────────
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'resources')));
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(express.static(path.join(__dirname,'resources')));
 app.use(session({
-  secret: process.env.SESSION_SECRET,
-  saveUninitialized: false,
-  resave: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-    httpOnly: true
-  }
+  secret:process.env.SESSION_SECRET,
+  saveUninitialized:false,
+  resave:false,
+  cookie:{secure:process.env.NODE_ENV==='production',maxAge:30*24*60*60*1000,httpOnly:true}
 }));
-app.use((req, res, next) => { res.locals.user = req.session.user || null; next(); });
-const auth = (req, res, next) => { if (!req.session.user) return res.redirect('/login'); next(); };
+app.use((req,res,next)=>{res.locals.user=req.session.user||null;next();});
+const auth=(req,res,next)=>{if(!req.session.user)return res.redirect('/login');next();};
 
 // ──────────────────  DATABASE  ──────────────────
 const db = pgp({
-  host: 'db',
-  port: 5432,
-  database: process.env.POSTGRES_DB,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD
+  host:'db',port:5432,
+  database:process.env.POSTGRES_DB,
+  user:process.env.POSTGRES_USER,
+  password:process.env.POSTGRES_PASSWORD
 });
 
-db.connect().then(obj => {
+db.connect().then(obj=>{
   obj.done();
   console.log('📦  Connected to PostgreSQL');
 
   // ensure admin exists
-  (async () => {
-    const email = 'admin@admin.com';
-    const exists = await db.oneOrNone('SELECT 1 FROM students WHERE email=$1', [email]);
-    if (!exists) {
-      const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+  (async()=>{
+    const email='admin@admin.com';
+    const exists=await db.oneOrNone('SELECT 1 FROM students WHERE email=$1',[email]);
+    if(!exists){
+      const hash=await bcrypt.hash(process.env.ADMIN_PASSWORD,10);
       await db.none(
         `INSERT INTO students(first_name,last_name,email,username,password,profile_photo)
          VALUES('Admin','User',$1,'admin',$2,'')`,
-        [email, hash]
+        [email,hash]
       );
       console.log('👑  Admin account created');
     }
   })();
-}).catch(e => console.error('DB ERROR:', e.message || e));
+}).catch(e=>console.error('DB ERROR:',e.message||e));
+
+// ────────────────────────────────────────────────
+//               AUTH / USER ROUTES
+// ────────────────────────────────────────────────
+app.get('/register',(req,res)=>res.render('pages/register',{title:'Register'}));
+
+app.post('/register',async(req,res)=>{
+  const {first_name,last_name,email,username,password,confirm_password}=req.body;
+  const formData={first_name,last_name,email,username};
+
+  if(password!==confirm_password)
+    return res.render('pages/register',{title:'Register',error:'Passwords do not match',formData});
+
+  try{
+    const hash=await bcrypt.hash(password,10);
+    const u=await db.one(
+      `INSERT INTO students(first_name,last_name,email,username,password,profile_photo)
+       VALUES($1,$2,$3,$4,$5,'')
+       RETURNING student_id,username,email,first_name,last_name,created_at`,
+      [first_name,last_name,email,username,hash]
+    );
+
+    req.session.user={
+      id:u.student_id,username:u.username,email:u.email,
+      first_name:u.first_name,last_name:u.last_name,
+      created_at:u.created_at,
+      profileImage:'/images/cardinal-bird-branch.jpg'
+    };
+    res.redirect('/profile');
+  }catch(err){
+    let error='Registration failed.';
+    if(err.code==='23505'){
+      if(err.constraint==='students_email_key')    error='Email already in use';
+      if(err.constraint==='students_username_key') error='Username already taken';
+    }
+    res.render('pages/register',{title:'Register',error,formData});
+  }
+});
+
+app.get('/login',(req,res)=>res.render('pages/login',{title:'Login'}));
+
+app.post('/login',async(req,res)=>{
+  const {email,password}=req.body;
+  try{
+    const u=await db.oneOrNone('SELECT * FROM students WHERE email=$1',[email]);
+    if(!u || !await bcrypt.compare(password,u.password))
+      return res.render('pages/login',{title:'Login',error:'Invalid email or password',formData:{email}});
+
+    req.session.user={
+      id:u.student_id,email:u.email,username:u.username,
+      first_name:u.first_name,last_name:u.last_name,
+      profileImage:u.profile_photo||'/images/cardinal-bird-branch.jpg'
+    };
+    res.redirect('/profile');
+  }catch(err){
+    console.error(err);
+    res.render('pages/login',{title:'Login',error:'Login failed.',formData:{email}});
+  }
+});
+
+app.get('/logout',(req,res)=>{
+  req.session.destroy(err=>{
+    if(err)console.log(err);
+    res.clearCookie('connect.sid');
+    res.render('pages/logout',{title:'Logging Out'});
+  });
+});
 
 // ────────────────────────────────────────────────
 //               SOCIAL / FEED ROUTES
 // ────────────────────────────────────────────────
 
-// Create post (with image resizing if necessary)
-app.post('/post', auth, upload.single('photo'), async (req, res) => {
-  const { caption } = req.body;
-  const uid = req.session.user.id;
-  if (!req.file) return res.status(400).send('No image uploaded.');
-
-  const imagePath = req.file.path;
-  
-  try {
-    // Read the uploaded file into a buffer
-    const imageBuffer = await fs.promises.readFile(imagePath);
-    // Retrieve metadata from the buffer using Sharp
-    const metadata = await sharp(imageBuffer).metadata();
-    console.log(`Original dimensions: ${metadata.width} x ${metadata.height}`);
-    
-    // Check whether the image is larger than 1920x1080
-    if (metadata.width > 1920 || metadata.height > 1080) {
-      const resizedBuffer = await sharp(imageBuffer)
-        .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true })
-        .toBuffer();
-      // Overwrite the original file with the resized image
-      await fs.promises.writeFile(imagePath, resizedBuffer);
-      
-      // Log new dimensions from the resized buffer for verification
-      const newMetadata = await sharp(resizedBuffer).metadata();
-      console.log(`Resized dimensions: ${newMetadata.width} x ${newMetadata.height}`);
-    } else {
-      console.log('Image is within 1080p bounds; no resizing needed.');
-    }
-  } catch (error) {
-    console.error('Error during image processing:', error);
-    // Optionally, decide whether to proceed with the original image or abort the request
-  }
-  
-  try {
+// Create post
+app.post('/post',auth,upload.single('photo'),async(req,res)=>{
+  const {caption}=req.body;
+  const uid=req.session.user.id;
+  if(!req.file) return res.status(400).send('No image uploaded.');
+  try{
     await db.none(
       'INSERT INTO posts(user_id,image_url,caption,created_at) VALUES($1,$2,$3,NOW())',
-      [uid, `/uploads/${req.file.filename}`, caption]
+      [uid,`/uploads/${req.file.filename}`,caption]
     );
     res.redirect('/social');
-  } catch (e) {
+  }catch(e){
     console.error(e);
     res.status(500).send('Error saving post.');
   }
 });
-
 
 // Delete post (also deletes image file)
 app.post('/delete-post/:id',auth,async(req,res)=>{
@@ -332,23 +362,19 @@ app.post('/settings/website',async(req,res)=>{
 });
 
 // Save user settings
-app.post('/settings/user', auth, async (req, res) => {
-  const { timezone } = req.body;
-  if (!timezone) {
-    return res.status(400).json({ error: 'No timezone provided.' });
-  }
-  try {
+app.post('/settings/user',auth,async(req,res)=>{
+  const {notifications,timezone}=req.body;
+  try{
     await db.none(
-      'UPDATE students SET timezone=$2 WHERE student_id=$1',
-      [req.session.user.id, timezone]
+      'UPDATE students SET notifications=$2,timezone=$3 WHERE student_id=$1',
+      [req.session.user.id,notifications==='on',timezone]
     );
-    res.json({ message: 'Saved' });
-  } catch (err) {
-    console.error('[ERROR] /settings/user:', err);
-    res.status(500).json({ error: 'Failed' });
+    res.json({message:'Saved'});
+  }catch(e){
+    console.error(e);
+    res.status(500).json({error:'Failed'});
   }
 });
-
 
 // Update profile image
 app.post('/update-profile-image',auth,upload.single('profileImage'),async(req,res)=>{

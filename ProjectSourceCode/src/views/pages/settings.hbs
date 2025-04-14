@@ -3,7 +3,6 @@
 <div class="container py-5">
   <h1 class="mb-4">Settings</h1>
 
-  <!-- Website Settings -->
   <div class="card shadow-lg mb-4">
     <div class="card-header bg-secondary text-white">
       <h4>Website Settings</h4>
@@ -23,11 +22,8 @@
     </div>
   </div>
 
-  <!-- User Settings -->
   {{#if user}}
     <h2>User Settings</h2>
-
-    <!-- Profile Info -->
     <div class="card shadow-lg mb-4">
       <div class="card-header bg-primary text-white">
         <h4>Profile Information</h4>
@@ -40,7 +36,6 @@
       </div>
     </div>
 
-    <!-- Username Update -->
     <form id="usernameForm">
       <div class="card shadow-lg mb-4">
         <div class="card-header bg-info text-white">
@@ -57,7 +52,6 @@
       </div>
     </form>
 
-    <!-- Password Update -->
     <form id="passwordForm">
       <div class="card shadow-lg mb-4">
         <div class="card-header bg-secondary text-white">
@@ -81,159 +75,118 @@
         </div>
       </div>
     </form>
-
-    <!-- Time Zone Selection -->
-    <form id="timezoneForm">
-      <div class="card shadow-lg mb-4">
-        <div class="card-header bg-warning text-dark">
-          <h4>Time Zone</h4>
-        </div>
-        <div class="card-body">
-          <div class="mb-3">
-            <label for="timezone" class="form-label"><strong>Select Your Time Zone:</strong></label>
-            <select id="timezone" name="timezone" class="form-select">
-              <option value="America/New_York">America/New_York</option>
-              <option value="America/Chicago">America/Chicago</option>
-              <option value="America/Denver">America/Denver</option>
-              <option value="America/Los_Angeles">America/Los_Angeles</option>
-              <option value="Europe/London">Europe/London</option>
-              <option value="Europe/Berlin">Europe/Berlin</option>
-              <option value="Asia/Tokyo">Asia/Tokyo</option>
-              <option value="Australia/Sydney">Australia/Sydney</option>
-            </select>
-            <small class="form-text text-muted">
-              Detected: <span id="browser-tz" class="fst-italic"></span>
-              <button type="button" id="useBrowserTZ" class="btn btn-sm btn-link">Use detected time zone</button>
-            </small>
-          </div>
-          <button type="submit" class="btn btn-warning">Save Time Zone</button>
-          <div id="timezoneMessage" class="mt-2"></div>
-        </div>
-      </div>
-    </form>
-
   {{else}}
     <h2>User Settings</h2>
     <div class="alert alert-info" role="alert">
       You need to be logged in to view and change your personal settings. <a href="/login" class="alert-link">Log in here</a>.
     </div>
   {{/if}}
+
 </div>
 
-<!-- Scripts -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Time Zone Auto-detect
-    const browserTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const browserSpan = document.getElementById('browser-tz');
-    const tzSelect = document.getElementById('timezone');
-    if (browserSpan) browserSpan.textContent = browserTZ;
-
-    const useBrowserTZBtn = document.getElementById('useBrowserTZ');
-    if (useBrowserTZBtn) {
-      useBrowserTZBtn.addEventListener('click', () => {
-        tzSelect.value = browserTZ;
-      });
-    }
-
-    // Time Zone Form
-    const timezoneForm = document.getElementById('timezoneForm');
-    const timezoneMessage = document.getElementById('timezoneMessage');
-    if (timezoneForm) {
-      timezoneForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const data = { timezone: tzSelect.value };
-        try {
-          const response = await fetch('/settings/user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-          const result = await response.json();
-          timezoneMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
-          timezoneMessage.textContent = result.message || result.error || 'Timezone saved.';
-        } catch (err) {
-          console.error(err);
-          timezoneMessage.className = 'alert alert-danger mt-2';
-          timezoneMessage.textContent = 'Failed to save timezone.';
-        }
-      });
-    }
-
-    // Website Settings
+    // Website Settings Form Submission
     const websiteSettingsForm = document.getElementById('websiteSettingsForm');
     const websiteSettingsMessage = document.getElementById('websiteSettingsMessage');
+
     if (websiteSettingsForm) {
       websiteSettingsForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+
         const formData = new FormData(websiteSettingsForm);
         const data = {};
-        formData.forEach((value, key) => data[key] = value);
+        formData.forEach((value, key) => {
+          data[key] = value;
+        });
 
         try {
           const response = await fetch('/settings/website', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify(data),
           });
           const result = await response.json();
           websiteSettingsMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
           websiteSettingsMessage.textContent = result.message || result.error || 'Settings saved.';
         } catch (error) {
+          console.error('Error saving website settings:', error);
           websiteSettingsMessage.className = 'alert alert-danger mt-2';
           websiteSettingsMessage.textContent = 'An unexpected error occurred.';
         }
       });
     }
 
-    // Username Update
+    // Username Form Submission
     const usernameForm = document.getElementById('usernameForm');
     const usernameMessage = document.getElementById('usernameMessage');
+
     if (usernameForm) {
       usernameForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const data = { username: usernameForm.username.value };
+
+        const formData = new FormData(usernameForm);
+        const data = {};
+        formData.forEach((value, key) => {
+          data[key] = value;
+        });
 
         try {
           const response = await fetch('/update-username', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify(data),
           });
-          const result = await response.json();
+          const result = await response.json(); // Assuming your /update-username returns JSON
           usernameMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
           usernameMessage.textContent = result.message || result.error || 'Username updated.';
+          // Optionally update the displayed username
+          if (response.ok && result.username) {
+            // You might need to reload or update the DOM accordingly
+          }
         } catch (error) {
+          console.error('Error updating username:', error);
           usernameMessage.className = 'alert alert-danger mt-2';
           usernameMessage.textContent = 'Failed to update username.';
         }
       });
     }
 
-    // Password Update
+    // Password Form Submission
     const passwordForm = document.getElementById('passwordForm');
     const passwordMessage = document.getElementById('passwordMessage');
+
     if (passwordForm) {
       passwordForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const data = {
-          currentPassword: passwordForm.currentPassword.value,
-          newPassword: passwordForm.newPassword.value,
-          confirmPassword: passwordForm.confirmPassword.value,
-        };
+
+        const formData = new FormData(passwordForm);
+        const data = {};
+        formData.forEach((value, key) => {
+          data[key] = value;
+        });
 
         try {
           const response = await fetch('/update-password', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify(data),
           });
-          const result = await response.json();
+          const result = await response.json(); // Assuming your /update-password returns JSON
           passwordMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
           passwordMessage.textContent = result.message || result.error || 'Password updated.';
-          if (response.ok) passwordForm.reset();
+          // Optionally clear the password fields
+          if (response.ok) {
+            passwordForm.reset();
+          }
         } catch (error) {
+          console.error('Error updating password:', error);
           passwordMessage.className = 'alert alert-danger mt-2';
           passwordMessage.textContent = 'Failed to update password.';
         }
