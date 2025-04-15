@@ -8,6 +8,10 @@
 require('dotenv').config();
 const express    = require('express');
 const app        = express();
+const http       = require('http');
+const server     = http.createServer(app);
+const socketIO   = require('socket.io');
+const io         = socketIO(server);
 const handlebars = require('express-handlebars');
 const path       = require('path');
 const fs         = require('fs');
@@ -238,6 +242,7 @@ app.post('/like-post/:id',auth,async(req,res)=>{
     if(l) await db.none('DELETE FROM likes WHERE like_id=$1',[l.like_id]);
     else   await db.none('INSERT INTO likes(post_id,user_id) VALUES($1,$2)',[pid,uid]);
     const {count}=await db.one('SELECT COUNT(*) FROM likes WHERE post_id=$1',[pid]);
+    io.emit('notificationUpdate');
     res.json({success:true,likeCount:count});
   }catch(e){
     console.error(e);
@@ -256,6 +261,7 @@ app.post('/comment-post/:id',auth,async(req,res)=>{
       [pid,uid,comment]
     );
     const {count}=await db.one('SELECT COUNT(*) FROM comments WHERE post_id=$1',[pid]);
+    io.emit('notificationUpdate');
     res.json({success:true,commentId:comment_id,commentCount:count});
   }catch(e){
     console.error(e);
@@ -327,6 +333,53 @@ app.get('/social',auth,async(req,res)=>{
   }catch(e){
     console.error(e);
     res.render('pages/social',{title:'Social',posts:[],error:'Could not load posts'});
+  }
+});
+
+// ---------- NOTICIATIONS ----------
+app.get('/api/notifications', auth, async (req, res) => {
+  const userId = req.session.user.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    // Fetch likes with post_id
+    const likes = await db.any(`
+      SELECT l.post_id, s.username AS from_user, p.caption AS post_caption
+      FROM likes l
+      JOIN posts p ON l.post_id = p.post_id
+      JOIN students s ON l.user_id = s.student_id
+      WHERE p.user_id = $1
+      ORDER BY l.created_at DESC
+      LIMIT 5;
+    `, [userId]);
+
+    // Fetch comments with post_id
+    const comments = await db.any(`
+      SELECT c.post_id, s.username AS from_user, p.caption AS post_caption, c.comment AS comment_text
+      FROM comments c
+      JOIN posts p ON c.post_id = p.post_id
+      JOIN students s ON c.user_id = s.student_id
+      WHERE p.user_id = $1
+      ORDER BY c.created_at DESC
+      LIMIT 5;
+    `, [userId]);
+
+    const notifications = [];
+    likes.forEach(like => notifications.push({
+      message: `${like.from_user} liked your post "${like.post_caption}"`,
+      postId: like.post_id
+    }));
+    comments.forEach(comment => notifications.push({
+      message: `${comment.from_user} commented on your post "${comment.post_caption}": "${comment.comment_text}"`,
+      postId: comment.post_id
+    }));
+
+    res.json({ notifications });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 });
 
@@ -454,4 +507,4 @@ app.post('/update-profile-image',auth,upload.single('profileImage'),async(req,re
 //                    SERVER
 // ────────────────────────────────────────────────
 const PORT=process.env.PORT||3000;
-app.listen(PORT,()=>console.log(`🚀  Server running on port ${PORT}`));
+server.listen(PORT,()=>console.log(`🚀  Server running on port ${PORT}`));
