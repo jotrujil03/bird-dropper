@@ -5,6 +5,7 @@
 //              (saved to DB & shown in feed)
 
 // ──────────────────  DEPENDENCIES  ──────────────────
+require('dotenv').config();
 const express    = require('express');
 const app        = express();
 const handlebars = require('express-handlebars');
@@ -15,6 +16,40 @@ const bodyParser = require('body-parser');
 const session    = require('express-session');
 const bcrypt     = require('bcryptjs');
 const multer     = require('multer');
+const axios      = require('axios');
+
+// ──────────────────  BirdFetch Function  ──────────────────
+async function fetchBirdInfoFromWikipedia(birdName) {
+  // Split the bird name into words and lowercase subsequent words
+  const words = birdName.split(' ');
+  if (words.length > 1) {
+    for (let i = 1; i < words.length; i++) {
+      words[i] = words[i].toLowerCase();
+    }
+    birdName = words.join(' ');
+  }
+
+  // Replace spaces with underscores
+  const underscoredBirdName = birdName.replace(/ /g, '_');
+  const apiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts|pageimages&titles=${encodeURIComponent(underscoredBirdName)}&explaintext&pithumbsize=500&exintro&pilimit=2`; // Keeping pilimit at 1 for now for simplicity
+  console.log('API URL:', apiUrl);
+  try {
+    const response = await axios.get(apiUrl);
+    const data = response.data;
+    console.log('Wikipedia Data:', data);
+    const pages = data.query.pages;
+    const pageId = Object.keys(pages)[0];
+    if (pageId !== '-1') {
+      const extract = pages[pageId].extract || '';
+      const image = pages[pageId].thumbnail ? pages[pageId].thumbnail.source : null; // Extract single thumbnail URL
+      return { name: birdName, info: extract, image: image }; // Use the 'image' property
+    }
+    return { name: birdName, info: null, image: null };
+  } catch (error) {
+    console.error('Error fetching from Wikipedia:', error);
+    return { name: birdName, info: null, image: null };
+  }
+}
 
 // ──────────────────  MULTER CONFIG  ──────────────────
 const storage = multer.diskStorage({
@@ -347,7 +382,29 @@ app.post('/edit-profile',auth,async(req,res)=>{
 });
 
 app.get('/settings',(req,res)=>res.render('pages/settings',{title:'Settings'}));
-app.get('/search',(req,res)=>res.render('pages/search',{title:'Search'}));
+
+
+app.get('/search', async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || query.trim() === '') {
+    return res.render('pages/search', { title: 'Search', results: [], query: query || '' });
+  }
+
+  try {
+    const wikipediaData = await fetchBirdInfoFromWikipedia(query);
+    console.log('Final Results Array:', [wikipediaData]); // Add this line
+    res.render('pages/search', {
+      title: 'Search',
+      results: [wikipediaData],
+      query: query
+    });
+  } catch (error) {
+    console.error('Error during Wikipedia search:', error);
+    res.render('pages/search', { title: 'Search', error: 'Failed to search Wikipedia.', results: [], query: query });
+  }
+});
+
 app.get('/about',(req,res)=>res.render('pages/about',{title:'About',user:req.session.user}));
 
 // ---------- SAVE WEBSITE SETTINGS ----------
