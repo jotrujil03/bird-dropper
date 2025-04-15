@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
 
   <style>
     /* Reset and base styles */
@@ -35,6 +36,9 @@
 
     .post-image img { width: 100%; max-height: 500px; object-fit: cover; display: block; }
     .post-caption { padding: 15px; font-size: 1rem; color: #444; }
+
+    /* Location */
+    .post-location { padding: 0 15px 15px; font-size: .9rem; color: #666; display:flex; align-items:center; gap:5px; }
 
     .post-actions { padding: 15px; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
     .post-actions button { background: none; border: none; color: #555; font-size: 1rem; display: flex; align-items: center; gap: 5px; cursor: pointer; transition: color .3s; }
@@ -92,7 +96,8 @@
     .file-display { flex:1; padding:12px 15px; background:#f1f3f6; border:2px dashed #bbb; border-radius:10px; text-align:center; font-size:.95rem; color:#666; transition:border-color .3s; }
     .file-wrapper:hover .file-display { border-color:#007bff; }
 
-    textarea { min-height:130px; resize:vertical; padding:12px 15px; border:1px solid #ccc; border-radius:10px; font-size:1rem; }
+    textarea, input[type="text"] { padding:12px 15px; border:1px solid #ccc; border-radius:10px; font-size:1rem; }
+    textarea { min-height:130px; resize:vertical; }
 
     .btn-post { width:100%; padding:14px; background:#007bff; color:#fff; border:none; border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(0,123,255,.25); transition:background .3s,transform .15s; }
     .btn-post:hover { background:#0065d1; }
@@ -139,6 +144,9 @@
 
             <div class="post-image"><img src="{{imageUrl}}" alt="{{caption}}"></div>
             <div class="post-caption"><p>{{caption}}</p></div>
+            {{#if location}}
+              <div class="post-location"><i class="fa fa-map-marker-alt"></i>{{location}}</div>
+            {{/if}}
 
             <div class="post-actions">
               <button class="like-btn" data-liked="false">
@@ -192,10 +200,17 @@
               <input type="file" id="photo" name="photo" accept="image/*" required>
             </div>
           </div>
+
           <div class="form-group">
             <label for="caption">Caption</label>
             <textarea id="caption" name="caption" placeholder="What bird did you see? Where? When?" required></textarea>
           </div>
+
+          <div class="form-group">
+            <label for="location">Location (optional)</label>
+            <input type="text" id="location" name="location" placeholder="e.g., Boulder, CO">
+          </div>
+
           <button type="submit" class="btn-post">Share Post</button>
         </form>
       </div>
@@ -342,12 +357,38 @@
       if (e.target === modal) modal.style.display = 'none';
     };
 
-    /* custom file input display */
-    const fileInput = document.getElementById('photo');
+    /* custom file input display + EXIF auto‑location */
+    const fileInput   = document.getElementById('photo');
     const fileDisplay = document.getElementById('fileDisplay');
+    const locInput    = document.getElementById('location');
+
     fileInput.addEventListener('change', () => {
       fileDisplay.textContent = fileInput.files[0] ? fileInput.files[0].name : 'Click or drag image here…';
+
+      if (!fileInput.files[0]) return;
+
+      /* read GPS metadata */
+      EXIF.getData(fileInput.files[0], function() {
+        const lat  = EXIF.getTag(this, 'GPSLatitude');
+        const lon  = EXIF.getTag(this, 'GPSLongitude');
+        const latR = EXIF.getTag(this, 'GPSLatitudeRef');
+        const lonR = EXIF.getTag(this, 'GPSLongitudeRef');
+
+        if (lat && lon) {
+          const decLat = dmsToDecimal(lat, latR);
+          const decLon = dmsToDecimal(lon, lonR);
+          locInput.value = `${decLat.toFixed(6)}, ${decLon.toFixed(6)}`;
+        }
+      });
     });
+
+    /* helper: convert DMS to decimal */
+    function dmsToDecimal(dmsArray, ref) {
+      const [d, m, s] = dmsArray;
+      let dec = d + (m / 60) + (s / 3600);
+      if (ref === 'S' || ref === 'W') dec *= -1;
+      return dec;
+    }
   </script>
 </body>
 </html>
