@@ -32,14 +32,13 @@
     }
 
     .form-control {
-  border-radius: 30px;
-  border: none;
-  padding: 1.15rem 1.25rem; /* Increased vertical padding */
-  font-size: 1.75rem; /* Matches placeholder text size */
-  box-shadow: none;
-  line-height: 1.2;
-}
-
+      border-radius: 30px;
+      border: none;
+      padding: 1.15rem 1.25rem; /* Increased vertical padding */
+      font-size: 1.75rem; /* Matches placeholder text size */
+      box-shadow: none;
+      line-height: 1.2;
+    }
 
     .form-control:focus {
       outline: none;
@@ -80,22 +79,29 @@
     }
 
     .form-control::placeholder {
-  font-size: 1.75rem;
-}
+      font-size: 1.75rem;
+    }
+
     .form-control:focus::placeholder {
       color: transparent;
     }
 
     /* Enlarged title and subtitle */
     header h1 {
-  font-size: 6rem; /* Huge like Google's logo */
-  line-height: 1.1;
-}
+      font-size: 6rem; /* Huge like Google's logo */
+      line-height: 1.1;
+    }
 
-header p {
-  font-size: 1.5rem;
-  margin-top: 0.5rem;
-}
+    header p {
+      font-size: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Enlarge the search and upload icons */
+    .input-group-text i.fas.fa-search,
+    .input-group-text i.fas.fa-upload {
+      font-size: 1.5rem;
+    }
   </style>
 </head>
 <body>
@@ -106,7 +112,7 @@ header p {
       </div>
     {{/if}}
 
-    <div class="row justify-content-center mt-5 pt-4"> <!-- Adjusted spacing here -->
+    <div class="row justify-content-center mt-5 pt-4">
       <div class="col-md-8 text-center">
         <header class="mb-5">
           <h1 class="fw-bold text-primary">Bird Dropper</h1>
