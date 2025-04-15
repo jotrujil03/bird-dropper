@@ -48,6 +48,7 @@ app.set('views', path.join(__dirname,'views'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(express.static(path.join(__dirname,'resources')));
+app.use('/uploads', express.static(path.join(__dirname, 'resources/uploads'))); // <<< ADDED THIS LINE
 app.use(session({
   secret:process.env.SESSION_SECRET,
   saveUninitialized:false,
