@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* Overall Page Styling */
     body {
       background-color: #f8f9fa;
       font-family: 'Roboto', sans-serif;
@@ -20,67 +19,83 @@
           color: #f8f9fa;
         {{/ifEquals}}
         {{#ifEquals theme 'system'}}
-          /* You might need more complex logic here to detect system theme */
         {{/ifEquals}}
       {{/if}}
     }
+
     .container {
-      padding-top: 30px;
+      padding-top: 60px; /* Increased spacing to push search bar lower */
     }
 
-    /* Card & Input Styling */
     .card {
       border-radius: 30px !important;
     }
+
     .form-control {
-      border-radius: 30px;
-      border: none;
-      padding: 0.75rem 1.25rem;
-      box-shadow: none;
-    }
-    /* Remove blue outline on focus */
+  border-radius: 30px;
+  border: none;
+  padding: 1.15rem 1.25rem; /* Increased vertical padding */
+  font-size: 1.75rem; /* Matches placeholder text size */
+  box-shadow: none;
+  line-height: 1.2;
+}
+
+
     .form-control:focus {
       outline: none;
       box-shadow: none;
     }
+
     .input-group-text {
       background-color: transparent;
       border: none;
       font-size: 1.25rem;
     }
 
-    /* Button Styling */
     .btn {
       border-radius: 30px;
       transition: background-color 0.3s, box-shadow 0.3s;
     }
+
     .btn:hover,
     .btn:focus {
       background-color: #e2e6ea;
       box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
     }
 
-    /* Badge (Quick Links) Styling */
     .badge {
       border-radius: 20px;
       transition: background-color 0.3s;
       cursor: pointer;
     }
+
     .badge:hover {
       background-color: #e2e6ea;
     }
 
-    /* Lower the input icons and search bar content a bit more */
     .input-group .form-control,
     .input-group .input-group-text {
       position: relative;
-      top: 8px; /* adjust the value as needed */
+      top: 8px;
     }
 
-    /* Enlarge the placeholder text within the search input */
     .form-control::placeholder {
-      font-size: 1.25rem; /* adjust the size as needed */
+  font-size: 1.75rem;
+}
+    .form-control:focus::placeholder {
+      color: transparent;
     }
+
+    /* Enlarged title and subtitle */
+    header h1 {
+  font-size: 6rem; /* Huge like Google's logo */
+  line-height: 1.1;
+}
+
+header p {
+  font-size: 1.5rem;
+  margin-top: 0.5rem;
+}
   </style>
 </head>
 <body>
@@ -91,10 +106,10 @@
       </div>
     {{/if}}
 
-    <div class="row justify-content-center mt-3 pt-3">
+    <div class="row justify-content-center mt-5 pt-4"> <!-- Adjusted spacing here -->
       <div class="col-md-8 text-center">
-        <header class="mb-4">
-          <h1 class="display-4 fw-bold text-primary">Bird Dropper</h1>
+        <header class="mb-5">
+          <h1 class="fw-bold text-primary">Bird Dropper</h1>
           <p class="text-muted">Find information about any bird species</p>
         </header>
 
