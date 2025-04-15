@@ -104,7 +104,25 @@
     .btn-post:active { transform:translateY(2px); }
 
     /* FAB */
-    .open-modal-btn { position:fixed; bottom:24px; right:24px; background:#007bff; color:#fff; border:none; border-radius:50%; width:80px; height:80px; font-size:2.6rem; line-height:80px; text-align:center; cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,0.3); z-index:300; transition:background .3s, transform .15s; }
+    .open-modal-btn {
+  position: fixed;
+  bottom: 40px;               /* moved farther from bottom */
+  right: 40px;                /* moved farther from right */
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 120px;               /* 150% of original 80px */
+  height: 120px;              /* 150% of original 80px */
+  font-size: 3.9rem;          /* 150% of original 2.6rem */
+  line-height: 120px;         /* match height for vertical centering */
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+  z-index: 300;
+  transition: background .3s, transform .15s;
+}
+
     .open-modal-btn:hover { background:#0056b3; }
   </style>
 </head>
