@@ -49,8 +49,8 @@
     <script>
     const socket = io();
 
-    socket.on('notificationUpdate', () => {
-        console.log('Notification update received');
+    // Function to fetch and update notifications
+    function fetchNotifications() {
         fetch('/api/notifications')
         .then(response => response.json())
         .then(data => {
@@ -63,7 +63,7 @@
             const bellIcon = document.querySelector('.fa-bell');
             if (bellIcon) {
                 const badge = document.createElement('span');
-                badge.classList.add('position-absolute', 'top-0', 'start-100', 'translate-middle', 'badge', 'rounded-pill', 'bg-danger');
+                badge.classList.add('position-absolute', 'top-0', 'start-10', 'translate-middle', 'badge', 'rounded-pill', 'bg-danger');
                 badge.textContent = data.notifications.length;
                 const visuallyHidden = document.createElement('span');
                 visuallyHidden.classList.add('visually-hidden');
@@ -80,7 +80,6 @@
                 const li = document.createElement('li');
                 const a = document.createElement('a');
                 a.classList.add('dropdown-item');
-                // Construct the link to the social page with a fragment identifier
                 a.href = `/social#post-${notification.postId}`;
                 a.textContent = notification.message;
                 li.appendChild(a);
@@ -98,6 +97,19 @@
             }
         })
         .catch(error => console.error('Error fetching notifications:', error));
+    }
+
+    // Fetch notifications on page load if the user is logged in
+    document.addEventListener('DOMContentLoaded', () => {
+        // Check if the user object exists (meaning the user is logged in)
+        if ('{{user}}' !== 'null' && '{{user}}' !== '') {
+        fetchNotifications();
+        }
+    });
+
+    socket.on('notificationUpdate', () => {
+        console.log('Notification update received');
+        fetchNotifications(); // Re-fetch notifications on real-time updates
     });
     </script>
 </body>

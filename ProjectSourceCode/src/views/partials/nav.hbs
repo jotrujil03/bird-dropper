@@ -26,7 +26,7 @@
             <a class="text-reset me-3" href="/notifications" id="navbarDropdownMenuLink" role="button" data-mdb-dropdown-init aria-expanded="false">
               <i class="fas fa-bell" title="Notifications" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;">
                 {{#if notifications.length}}
-                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  <span class="position-absolute top-50 start-10 translate-middle badge rounded-pill bg-danger">
                     {{notifications.length}}
                     <span class="visually-hidden">unread messages</span>
                   </span>
@@ -78,5 +78,12 @@
     transition: all 0.3s ease;
     border-radius: 0.25rem;
     color: #000000;
+  }
+
+  .fa-bell + .badge.bg-danger {
+  position: absolute;
+  top: 0.3em; /* Adjust this value to move it up or down */
+  right: 0.1em; /* Adjust this value to move it left or right */
+  transform: translate(100%, -100%); /* Keep this for centering */
   }
 </style>
