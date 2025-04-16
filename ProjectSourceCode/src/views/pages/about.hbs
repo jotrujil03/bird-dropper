@@ -1,215 +1,316 @@
-<div class="about-container">
-    <!-- Hero section with mission statement -->
-    <section class="hero">
-        <h1>About Bird Dropper</h1>
-        <p class="mission">Our mission is to make bird watching accessible to everyone by providing innovative tracking solutions.</p>
-    </section>
-
-    <!-- Main content sections -->
-    <section class="content-section">
-        <div class="info-card">
-            <div class="card-image">
-                <img src="/uploads/ourStory.jpg" alt="Our Story">
-            </div>
-            <div class="card-text">
-                <h2>Our Story</h2>
-                <p>Bird Dropper began with a simple idea: helping bird enthusiasts track and identify their feathered friends. Since our founding, we've grown into a platform used by millions of bird watchers worldwide.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="content-section reverse">
-        <div class="info-card">
-            <div class="card-text">
-                <h2>Our Approach</h2>
-                <p>We believe technology should enhance our connection to nature, not replace it. Our tools are designed to be intuitive, unobtrusive, and educational, helping people appreciate the beauty of birds in their natural habitats.</p>
-            </div>
-            <div class="card-image">
-                <img src="/uploads/ourApproach.jpg" alt="Our Approach">
-            </div>
-        </div>
-    </section>
-
-    <section class="content-section">
-        <div class="info-card">
-            <div class="card-image">
-                <img src="/images/our-team.svg" alt="Our Team">
-            </div>
-            <div class="card-text">
-                <h2>Our Team</h2>
-                <p>We're a diverse group of ornithologists, developers, designers, and enthusiasts who share a passion for birds. Together, we're working to create the world's most comprehensive bird tracking platform.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Stats section -->
-    <section class="stats-section">
-        <div class="stat-item">
-            <h3>5M+</h3>
-            <p>Bird species tracked</p>
-        </div>
-        <div class="stat-item">
-            <h3>190+</h3>
-            <p>Countries covered</p>
-        </div>
-        <div class="stat-item">
-            <h3>10M+</h3>
-            <p>Active users</p>
-        </div>
-    </section>
-
-    <!-- Values section -->
-    <section class="values-section">
-        <h2>Our Values</h2>
-        <div class="values-container">
-            <div class="value-item">
-                <h3>Innovation</h3>
-                <p>Continuously improving our technology to better serve bird enthusiasts.</p>
-            </div>
-            <div class="value-item">
-                <h3>Education</h3>
-                <p>Sharing knowledge about birds and their ecosystems.</p>
-            </div>
-            <div class="value-item">
-                <h3>Conservation</h3>
-                <p>Supporting efforts to protect bird habitats around the world.</p>
-            </div>
-            <div class="value-item">
-                <h3>Community</h3>
-                <p>Fostering connections among bird watchers globally.</p>
-            </div>
-        </div>
-    </section>
-</div>
-
-<style>
-    /* Google-inspired styling */
-    .about-container {
-        font-family: 'Roboto', Arial, sans-serif;
-        color: #202124;
-        max-width: 1140px;
-        margin: 0 auto;
-        padding: 40px 20px;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>About Bird Dropper</title>
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset & Base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    
+    html { font-size: 16px; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      color: var(--text);
+      line-height: 1.6;
+      background: #fff;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* CSS Variables */
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #1669c1;
+      --text: #202124;
+      --text-light: #5f6368;
+      --bg-light: #f8f9fa;
+      --spacing: 1rem;
+      --container-width: 1200px;
+
+      /* New: global corner‑radius */
+      --radius: 1rem;
+    }
+
+    /* Utility */
+    .container {
+      max-width: var(--container-width);
+      margin: 0 auto;
+      padding: 0 var(--spacing);
+    }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Skip‑Link */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+    }
+    .skip-link:focus {
+      left: var(--spacing);
+      top: var(--spacing);
+      background: var(--primary);
+      color: #fff;
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      z-index: 1000;
+    }
+
+    /* ——— Hero Section as Card ——— */
     .hero {
-        text-align: center;
-        padding: 60px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 6rem var(--spacing);
+      background: linear-gradient(135deg,
+                  rgba(26,115,232,0.1) 0%,
+                  rgba(26,115,232,0) 100%);
+
+      /* ← new card styling */
+      border-radius: var(--radius);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+      overflow: hidden;
+      margin: 2rem 0;
     }
-    
-    .hero h1 {
-        font-size: 54px;
-        font-weight: 400;
-        margin-bottom: 20px;
+    .hero__content {
+      flex: 1;
+      min-width: 300px;
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: slideInLeft 0.8s ease-out forwards;
     }
-    
-    .mission {
-        font-size: 24px;
-        max-width: 800px;
-        margin: 0 auto;
-        color: #5f6368;
+    .hero__content h1 {
+      font-size: 2.75rem;
+      margin-bottom: var(--spacing);
+      font-weight: 700;
     }
-    
-    .content-section {
-        margin: 80px 0;
+    .hero__content p {
+      font-size: 1.25rem;
+      margin-bottom: calc(var(--spacing) * 1.5);
+      color: var(--text-light);
     }
-    
-    .info-card {
-        display: flex;
-        align-items: center;
-        gap: 60px;
+    .btn {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 12px rgba(26,115,232,0.3);
+      transition: background 0.3s, transform 0.2s;
     }
-    
-    .reverse .info-card {
-        flex-direction: row-reverse;
+    .btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
     }
-    
-    .card-image {
-        flex: 1;
+    .hero__image {
+      flex: 1;
+      min-width: 300px;
+      text-align: center;
+      opacity: 0;
+      transform: translateX(20px);
+      animation: slideInRight 0.8s ease-out forwards;
     }
-    
-    .card-image img {
-        max-width: 100%;
-        height: auto;
+    .hero__image img {
+      border-radius: var(--radius);
     }
-    
-    .card-text {
-        flex: 1;
+
+    /* Info Cards */
+    .info {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 2rem;
+      margin: 2rem 0;
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+      transition: transform 0.3s;
     }
-    
-    .card-text h2 {
-        font-size: 36px;
-        font-weight: 400;
-        margin-bottom: 20px;
-        color: #1a73e8;
+    .info:hover { transform: translateY(-5px); }
+    .info--reverse { flex-direction: row-reverse; }
+    .info__img { flex: 1; }
+    .info__body {
+      flex: 1;
+      padding: 2rem;
     }
-    
-    .card-text p {
-        font-size: 18px;
-        line-height: 1.6;
-        color: #5f6368;
+    .info__body h2 {
+      color: var(--primary);
+      margin-bottom: 0.5rem;
     }
-    
-    .stats-section {
-        display: flex;
-        justify-content: space-around;
-        margin: 100px 0;
-        text-align: center;
+    .info__body p {
+      color: var(--text-light);
     }
-    
-    .stat-item h3 {
-        font-size: 48px;
-        font-weight: 500;
-        color: #1a73e8;
-        margin-bottom: 10px;
+
+    /* Stats Panels */
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      text-align: center;
+      padding: 4rem 0;
+      background: var(--bg-light);
     }
-    
-    .values-section {
-        text-align: center;
-        margin: 100px 0;
+    .stats__item {
+      flex: 1;
+      min-width: 200px;
+      padding: 1.5rem;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin: 0.5rem;
     }
-    
-    .values-section h2 {
-        font-size: 36px;
-        font-weight: 400;
-        margin-bottom: 40px;
+    .stats__number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
     }
-    
-    .values-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 30px;
+
+    /* Values Grid */
+    .values {
+      text-align: center;
+      padding: 4rem 0;
     }
-    
-    .value-item {
-        padding: 30px;
-        background: #f8f9fa;
-        border-radius: 8px;
+    .values h2 {
+      color: var(--primary);
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
     }
-    
-    .value-item h3 {
-        color: #1a73e8;
-        margin-bottom: 15px;
+    .values__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2rem;
     }
-    
-    /* Responsive adjustments */
+    .value {
+      background: #fff;
+      padding: 2rem;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    }
+    .value h3 {
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+    .value p { color: var(--text-light); }
+
+    /* Animations */
+    @keyframes slideInLeft {
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
-        .info-card, .reverse .info-card {
-            flex-direction: column;
-            gap: 30px;
-        }
-        
-        .stats-section {
-            flex-direction: column;
-            gap: 40px;
-        }
-        
-        .hero h1 {
-            font-size: 40px;
-        }
-        
-        .mission {
-            font-size: 20px;
-        }
+      .hero { flex-direction: column; text-align: center; }
+      .info { flex-direction: column; }
     }
-</style></div>
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+  <!-- your nav here -->
+  <main id="main-content">
+    <!-- Hero as Card -->
+    <section class="hero container">
+      <div class="hero__content">
+        <h1>About Bird Dropper</h1>
+        <p>Making bird watching accessible with innovative tracking solutions.</p>
+        <a href="/signup" class="btn">Get Started</a>
+      </div>
+      <div class="hero__image">
+        <!-- Make sure this file exists at /uploads/hero-birds.jpg -->
+        <img src="/uploads/hero-birds.png" alt="Flock of birds" loading="lazy" />
+      </div>
+    </section>
+
+    <!-- Our Story / Approach / Team -->
+    <section class="container">
+      <div class="info">
+        <div class="info__img">
+          <img src="/uploads/ourStory.jpg" alt="Our Story" loading="lazy" />
+        </div>
+        <div class="info__body">
+          <h2>Our Story</h2>
+          <p>Bird Dropper began with a simple idea: helping bird enthusiasts track and identify their feathered friends. Our community has grown to millions of watchers worldwide.</p>
+        </div>
+      </div>
+
+      <div class="info info--reverse">
+        <div class="info__img">
+          <img src="/uploads/ourApproach.jpg" alt="Our Approach" loading="lazy" />
+        </div>
+        <div class="info__body">
+          <h2>Our Approach</h2>
+          <p>We believe technology should enhance our connection to nature. Our tools are intuitive, unobtrusive, and educational.</p>
+        </div>
+      </div>
+
+      <div class="info">
+        <div class="info__img">
+          <img src="/uploads/ourTeam.jpg" alt="Our Team" loading="lazy" />
+        </div>
+        <div class="info__body">
+          <h2>Our Team</h2>
+          <p>A diverse group of ornithologists, developers, and designers passionate about birds. We’re building the world’s most comprehensive bird tracking platform.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Values -->
+    <section class="values container">
+      <h2>Our Values</h2>
+      <div class="values__grid">
+        <div class="value">
+          <h3>Innovation</h3>
+          <p>Continuously improving our technology to better serve bird enthusiasts.</p>
+        </div>
+        <div class="value">
+          <h3>Education</h3>
+          <p>Sharing knowledge about birds and their ecosystems.</p>
+        </div>
+        <div class="value">
+          <h3>Conservation</h3>
+          <p>Supporting efforts to protect bird habitats around the world.</p>
+        </div>
+        <div class="value">
+          <h3>Community</h3>
+          <p>Fostering connections among bird watchers globally.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Animate stats on scroll
+    document.addEventListener('DOMContentLoaded', () => {
+      const stats = document.querySelectorAll('.stats__number');
+      const animate = el => {
+        const target = +el.dataset.target, step = target / 200;
+        let count = 0;
+        (function update() {
+          count < target
+            ? (el.textContent = Math.ceil(count += step), setTimeout(update, 10))
+            : (el.textContent = target);
+        })();
+      };
+      stats.forEach(s => new IntersectionObserver(
+        entries => entries.forEach(e => e.isIntersecting && animate(e.target)),
+        { threshold: 0.5 }
+      ).observe(s));
+    });
+  </script>
+</body>
+</html>
