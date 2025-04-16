@@ -217,7 +217,14 @@ app.post('/post', auth, upload.single('photo'), async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).send('No image uploaded.');
 
-  const fileName = `posts/${Date.now()}-${file.originalname}`;
+ /* replace unsafe chars with dashes and collapse repeats */
+const safeName = file.originalname
+.normalize('NFKD')                 // remove weird unicode
+.replace(/[^\w.\-]+/g, '-')        // keep letters, numbers, _, -, .
+.replace(/-+/g, '-');              // no double dashes
+
+const fileName = `posts/${Date.now()}-${safeName}`;
+
   const { error: upErr } = await supabase
     .storage.from(BUCKET)
     .upload(fileName, file.buffer, { contentType: file.mimetype, upsert: false });
