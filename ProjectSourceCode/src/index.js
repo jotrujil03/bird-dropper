@@ -165,7 +165,7 @@ app.post('/register', async (req, res) => {
       created_at: u.created_at,
       profileImage: '/images/cardinal-bird-branch.jpg'
     };
-    res.redirect('/profile');
+    res.redirect('/');
   } catch (err) {
     let error = 'Registration failed.';
     if (err.code === '23505') {
@@ -191,7 +191,7 @@ app.post('/login', async (req, res) => {
       last_name : u.last_name,
       profileImage: u.profile_photo || '/images/cardinal-bird-branch.jpg'
     };
-    res.redirect('/profile');
+    res.redirect('/');
   } catch (err) {
     console.error(err);
     res.render('pages/login', { title: 'Login', error: 'Login failed.', formData: { email } });
