@@ -455,6 +455,53 @@ app.post('/edit-profile', auth, async (req, res) => {
   }
 });
 
+// ---------- BROWSE POPULAR BIRD SPECIES ----------
+app.get('/browse', async (req, res) => {
+  try {
+    // Define an array with a bunch of popular bird names.
+    const popularBirds = [
+      'Northern Cardinal',
+      'Blue Jay',
+      'American Robin',
+      'Bald Eagle',
+      'Great Horned Owl',
+      'Peregrine Falcon',
+      'Duck',
+      'Red-tailed Hawk',
+      'Starling',
+      'House Sparrow'
+    ];
+
+    // Loop over each bird and fetch the info from Wikipedia.
+    const species = [];
+    for (const birdName of popularBirds) {
+      const info = await fetchBirdInfoFromWikipedia(birdName);
+      // Convert the returned image field into a consistent images array.
+      species.push({
+        name  : info.name,
+        info  : info.info,
+        image : info.image,
+        images: info.image ? [info.image] : []
+      });
+    }
+
+    // Render the browse page, passing in the species array.
+    res.render('pages/browse', {
+      title   : 'Browse Popular Bird Species',
+      species : species,
+      language: 'en',
+      user    : req.session.user
+    });
+  } catch (err) {
+    console.error('Browse error:', err);
+    res.render('pages/browse', { error: 'Unable to fetch popular birds' });
+  }
+});
+
+
+
+
+
 app.get('/settings', (req, res) => res.render('pages/settings', { title: 'Settings' }));
 
 app.get('/search', async (req, res) => {
