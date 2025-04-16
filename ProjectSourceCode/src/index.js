@@ -165,7 +165,7 @@ app.post('/register', async (req, res) => {
       created_at: u.created_at,
       profileImage: '/images/cardinal-bird-branch.jpg'
     };
-    res.redirect('/');
+    res.redirect('/profile');
   } catch (err) {
     let error = 'Registration failed.';
     if (err.code === '23505') {
