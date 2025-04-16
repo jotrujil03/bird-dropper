@@ -1,194 +1,283 @@
 {{> header}}
 
-<div class="container py-5">
-  <h1 class="mb-4">Settings</h1>
+<div class="settings container py-5">
+  <h1 class="settings__title text-center mb-5">Settings</h1>
 
-  <div class="card shadow-lg mb-4">
-    <div class="card-header bg-secondary text-white">
-      <h4>Website Settings</h4>
-    </div>
-    <div class="card-body">
-      <form id="websiteSettingsForm">
-        <div class="mb-3">
-          <label for="theme" class="form-label"><strong>Theme:</strong></label>
-          <select class="form-select" id="theme" name="theme">
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
+  <div class="row gy-4 justify-content-center">
+    <!-- Website Settings (takes 8 cols on lg+) -->
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm settings-card">
+        <div class="card-header bg-gradient d-flex align-items-center">
+          <i class="fas fa-cog me-3 fa-lg"></i>
+          <h2 class="h5 mb-0 text-white">Website Settings</h2>
         </div>
-        <button type="submit" class="btn btn-secondary">Save Website Settings</button>
-        <div id="websiteSettingsMessage" class="mt-2"></div>
-      </form>
+        <div class="card-body">
+          <form id="websiteSettingsForm" novalidate>
+            <div class="form-floating mb-4">
+              <select class="form-select" id="theme" name="theme" aria-label="Select theme">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+              <label for="theme">Theme</label>
+            </div>
+            <div class="form-floating mb-4">
+              <select class="form-select" id="timezone" name="timezone" aria-label="Select time zone">
+                <option value="UTC">UTC</option>
+                <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                <option value="America/Denver">Mountain Time (US & Canada)</option>
+                <option value="America/Chicago">Central Time (US & Canada)</option>
+                <option value="America/New_York">Eastern Time (US & Canada)</option>
+                <option value="Europe/London">London (GMT)</option>
+                <option value="Europe/Paris">Paris (CET)</option>
+                <option value="Asia/Tokyo">Tokyo (JST)</option>
+                <option value="Australia/Sydney">Sydney (AEST)</option>
+              </select>
+              <label for="timezone">Time Zone</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Save</button>
+            <div id="websiteSettingsMessage" class="mt-3" role="alert" aria-live="polite"></div>
+          </form>
+        </div>
+      </div>
     </div>
+
+    {{#if user}}
+    <!-- Profile & Account Settings (4 cols on lg+) -->
+    <div class="col-12 col-lg-4">
+      <!-- Profile Info Card -->
+      <div class="card shadow-sm mb-4 settings-card">
+        <div class="card-header bg-gradient d-flex align-items-center">
+          <i class="fas fa-user me-3 fa-lg"></i>
+          <h2 class="h5 mb-0 text-white">Profile</h2>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Email</label>
+            <p class="form-control-plaintext">{{user.email}}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accordion for Username & Password -->
+      <div class="accordion" id="settingsAccordion">
+        <!-- Change Username -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingUsername">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#collapseUsername"
+                    aria-expanded="false" aria-controls="collapseUsername">
+              <i class="fas fa-user-edit me-2 fa-lg"></i> Change Username
+            </button>
+          </h2>
+          <div id="collapseUsername" class="accordion-collapse collapse"
+               aria-labelledby="headingUsername" data-bs-parent="#settingsAccordion">
+            <div class="accordion-body">
+              <form id="usernameForm" novalidate>
+                <div class="form-floating mb-4">
+                  <input type="text" class="form-control" id="username" name="username"
+                         value="{{user.username}}" placeholder="Username">
+                  <label for="username">Username</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Update</button>
+                <div id="usernameMessage" class="mt-3" role="alert" aria-live="polite"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingPassword">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#collapsePassword"
+                    aria-expanded="false" aria-controls="collapsePassword">
+              <i class="fas fa-lock me-2 fa-lg"></i> Change Password
+            </button>
+          </h2>
+          <div id="collapsePassword" class="accordion-collapse collapse"
+               aria-labelledby="headingPassword" data-bs-parent="#settingsAccordion">
+            <div class="accordion-body">
+              <form id="passwordForm" novalidate>
+                <div class="form-floating mb-3">
+                  <input type="password" class="form-control" id="currentPassword"
+                         name="currentPassword" placeholder="Current Password">
+                  <label for="currentPassword">Current Password</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input type="password" class="form-control" id="newPassword"
+                         name="newPassword" placeholder="New Password">
+                  <label for="newPassword">New Password</label>
+                </div>
+                <div class="form-floating mb-4">
+                  <input type="password" class="form-control" id="confirmPassword"
+                         name="confirmPassword" placeholder="Confirm New Password">
+                  <label for="confirmPassword">Confirm New Password</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Update</button>
+                <div id="passwordMessage" class="mt-3" role="alert" aria-live="polite"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{else}}
+    <div class="col-12">
+      <div class="alert alert-info text-center">
+        You need to be logged in to view and change your settings.
+        <a href="/login" class="fw-bold">Log in here</a>.
+      </div>
+    </div>
+    {{/if}}
   </div>
-
-  {{#if user}}
-    <h2>User Settings</h2>
-    <div class="card shadow-lg mb-4">
-      <div class="card-header bg-primary text-white">
-        <h4>Profile Information</h4>
-      </div>
-      <div class="card-body">
-        <div class="mb-3">
-          <label class="form-label"><strong>Email:</strong></label>
-          <p class="form-control-plaintext">{{user.email}}</p>
-        </div>
-      </div>
-    </div>
-
-    <form id="usernameForm">
-      <div class="card shadow-lg mb-4">
-        <div class="card-header bg-info text-white">
-          <h4>Change Username</h4>
-        </div>
-        <div class="card-body">
-          <div class="mb-3">
-            <label for="username" class="form-label"><strong>Username:</strong></label>
-            <input type="text" id="username" name="username" class="form-control" value="{{user.username}}">
-          </div>
-          <button type="submit" class="btn btn-info">Update Username</button>
-          <div id="usernameMessage" class="mt-2"></div>
-        </div>
-      </div>
-    </form>
-
-    <form id="passwordForm">
-      <div class="card shadow-lg mb-4">
-        <div class="card-header bg-secondary text-white">
-          <h4>Change Password</h4>
-        </div>
-        <div class="card-body">
-          <div class="mb-3">
-            <label for="currentPassword" class="form-label"><strong>Current Password:</strong></label>
-            <input type="password" id="currentPassword" name="currentPassword" class="form-control" placeholder="Enter your current password">
-          </div>
-          <div class="mb-3">
-            <label for="newPassword" class="form-label"><strong>New Password:</strong></label>
-            <input type="password" id="newPassword" name="newPassword" class="form-control" placeholder="Enter your new password">
-          </div>
-          <div class="mb-3">
-            <label for="confirmPassword" class="form-label"><strong>Confirm New Password:</strong></label>
-            <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Confirm your new password">
-          </div>
-          <button type="submit" class="btn btn-secondary">Update Password</button>
-          <div id="passwordMessage" class="mt-2"></div>
-        </div>
-      </div>
-    </form>
-  {{else}}
-    <h2>User Settings</h2>
-    <div class="alert alert-info" role="alert">
-      You need to be logged in to view and change your personal settings. <a href="/login" class="alert-link">Log in here</a>.
-    </div>
-  {{/if}}
-
 </div>
+
+<style>
+  :root {
+    --primary: #007bff;
+    --primary-dark: #0056b3;
+    --text-dark: #343a40;
+  }
+
+  html {
+    font-size: 1.125rem;
+  }
+
+  .settings__title {
+    font-size: 2.75rem;
+    color: var(--text-dark);
+    font-weight: 600;
+  }
+
+  .bg-gradient {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  }
+
+  .settings-card {
+    border: none;
+    border-radius: 0.75rem;
+  }
+
+  .settings-card .card-body {
+    padding: 2rem;
+  }
+
+  .card-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 1.125rem;
+    padding: 1rem 0.75rem;
+  }
+
+  .btn-primary {
+    font-size: 1.125rem;
+    padding: 0.75rem 1.25rem;
+    background-color: var(--primary);
+    border-color: var(--primary);
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+  }
+
+  .accordion-button {
+    font-size: 1.25rem;
+    padding: 1rem;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    box-shadow: none;
+    border-color: var(--primary);
+  }
+</style>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Website Settings Form Submission
+    // Pre-select user's time zone
+    const tzSelect = document.getElementById('timezone');
+    if (tzSelect) {
+      const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if ([...tzSelect.options].some(o => o.value === userTz)) {
+        tzSelect.value = userTz;
+      }
+    }
+
+    // Utility to show & auto-hide a message
+    function showMessage(el, text, success) {
+      el.textContent = text;
+      el.className = success ? 'alert alert-success mt-3' : 'alert alert-danger mt-3';
+      setTimeout(() => {
+        el.textContent = '';
+        el.className = '';
+      }, 3000);
+    }
+
+    // Website Settings Form
     const websiteSettingsForm = document.getElementById('websiteSettingsForm');
-    const websiteSettingsMessage = document.getElementById('websiteSettingsMessage');
-
+    const websiteMsg = document.getElementById('websiteSettingsMessage');
     if (websiteSettingsForm) {
-      websiteSettingsForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(websiteSettingsForm);
-        const data = {};
-        formData.forEach((value, key) => {
-          data[key] = value;
-        });
-
+      websiteSettingsForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(websiteSettingsForm));
         try {
-          const response = await fetch('/settings/website', {
+          const res = await fetch('/settings/website', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data)
           });
-          const result = await response.json();
-          websiteSettingsMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
-          websiteSettingsMessage.textContent = result.message || result.error || 'Settings saved.';
-        } catch (error) {
-          console.error('Error saving website settings:', error);
-          websiteSettingsMessage.className = 'alert alert-danger mt-2';
-          websiteSettingsMessage.textContent = 'An unexpected error occurred.';
+          const json = await res.json();
+          showMessage(websiteMsg, json.message || json.error || 'Settings saved.', res.ok);
+        } catch {
+          showMessage(websiteMsg, 'An unexpected error occurred.', false);
         }
       });
     }
 
-    // Username Form Submission
+    // Username Form
     const usernameForm = document.getElementById('usernameForm');
-    const usernameMessage = document.getElementById('usernameMessage');
-
+    const usernameMsg = document.getElementById('usernameMessage');
     if (usernameForm) {
-      usernameForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(usernameForm);
-        const data = {};
-        formData.forEach((value, key) => {
-          data[key] = value;
-        });
-
+      usernameForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(usernameForm));
         try {
-          const response = await fetch('/update-username', {
+          const res = await fetch('/update-username', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data)
           });
-          const result = await response.json(); // Assuming your /update-username returns JSON
-          usernameMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
-          usernameMessage.textContent = result.message || result.error || 'Username updated.';
-          // Optionally update the displayed username
-          if (response.ok && result.username) {
-            // You might need to reload or update the DOM accordingly
-          }
-        } catch (error) {
-          console.error('Error updating username:', error);
-          usernameMessage.className = 'alert alert-danger mt-2';
-          usernameMessage.textContent = 'Failed to update username.';
+          const json = await res.json();
+          showMessage(usernameMsg, json.message || json.error || 'Username updated.', res.ok);
+        } catch {
+          showMessage(usernameMsg, 'Failed to update username.', false);
         }
       });
     }
 
-    // Password Form Submission
+    // Password Form
     const passwordForm = document.getElementById('passwordForm');
-    const passwordMessage = document.getElementById('passwordMessage');
-
+    const passwordMsg = document.getElementById('passwordMessage');
     if (passwordForm) {
-      passwordForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(passwordForm);
-        const data = {};
-        formData.forEach((value, key) => {
-          data[key] = value;
-        });
-
+      passwordForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(passwordForm));
         try {
-          const response = await fetch('/update-password', {
+          const res = await fetch('/update-password', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data)
           });
-          const result = await response.json(); // Assuming your /update-password returns JSON
-          passwordMessage.className = response.ok ? 'alert alert-success mt-2' : 'alert alert-danger mt-2';
-          passwordMessage.textContent = result.message || result.error || 'Password updated.';
-          // Optionally clear the password fields
-          if (response.ok) {
-            passwordForm.reset();
-          }
-        } catch (error) {
-          console.error('Error updating password:', error);
-          passwordMessage.className = 'alert alert-danger mt-2';
-          passwordMessage.textContent = 'Failed to update password.';
+          const json = await res.json();
+          showMessage(passwordMsg, json.message || json.error || 'Password updated.', res.ok);
+          if (res.ok) passwordForm.reset();
+        } catch {
+          showMessage(passwordMsg, 'Failed to update password.', false);
         }
       });
     }
