@@ -444,7 +444,6 @@ app.get('/', async (req, res) => {
 
 
 app.get('/profile', auth, async (req, res) => {
-  console.log('Inside /profile route, req.session:', req.session); // Add this line
   try {
     const s = await db.one('SELECT * FROM students WHERE student_id=$1', [req.session.user.id]);
     req.session.user.bio = s.bio;
