@@ -182,12 +182,11 @@ app.post('/register', async (req, res) => {
 app.get('/login',  (req, res) => res.render('pages/login', { title: 'Login' }));
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  console.log('Attempting login with email:', email); // Add this line
   try {
     const u = await db.oneOrNone('SELECT * FROM students WHERE email=$1', [email]);
     console.log('User found:', u); // Add this line
     if (!u || !(await bcrypt.compare(password, u.password))) {
-      console.log('Login failed - invalid credentials'); // Add this line
+      console.log('Login failed - invalid credentials');
       return res.render('pages/login', { title: 'Login', error: 'Invalid email or password', formData: { email } });
     }
     const passwordMatch = await bcrypt.compare(password, u.password);
@@ -202,7 +201,7 @@ app.post('/login', async (req, res) => {
     };
     res.redirect('/profile');
   } catch (err) {
-    console.error('Login error:', err); // Keep this error logging
+    console.error('Login error:', err);
     res.render('pages/login', { title: 'Login', error: 'Login failed.', formData: { email } });
   }
 });
