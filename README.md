@@ -1,7 +1,6 @@
 # 🐦 The Bird Dropper: Share Your Sightings, Spread the Joy! 🐦
 
-[![Placeholder for App Logo/Screenshot](https://via.placeholder.com/150)](https://your-deployed-app-link.com)
-
+[![Placeholder for App Logo/Screenshot](https://via.placeholder.com/150)](https://bird-dropper-web.onrender.com)
 ## 🌟 For the Avid Bird Watcher: Drop Your Discoveries! 🌟
 
 Are you passionate about spotting feathered friends? Do you get a thrill from identifying a rare warbler or a majestic raptor? Then **The Bird Dropper** is the app for you!
