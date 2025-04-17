@@ -117,7 +117,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV,
     maxAge: 30 * 24 * 60 * 60 * 1000,
-    httpOnly: false;
+    httpOnly: false,
   }
 }));
 app.use((req, res, next) => { res.locals.user = req.session.user || null; next(); });
