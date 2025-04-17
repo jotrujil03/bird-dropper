@@ -199,7 +199,7 @@ app.post('/login', async (req, res) => {
       last_name : u.last_name,
       profileImage: u.profile_photo || '/images/cardinal-bird-branch.jpg'
     };
-    res.redirect('/profile');
+    res.redirect('/');
   } catch (err) {
     console.error('Login error:', err);
     res.render('pages/login', { title: 'Login', error: 'Login failed.', formData: { email } });
@@ -437,6 +437,12 @@ app.get('/', async (req, res) => {
   }
 });
 
+  app.get('/regions', (req, res) => {
+    res.render('pages/regions');
+  });
+
+
+
 app.get('/profile', auth, async (req, res) => {
   console.log('Inside /profile route, req.session:', req.session); // Add this line
   try {
@@ -500,6 +506,21 @@ app.get('/browse', async (req, res) => {
         images: info.image ? [info.image] : []
       });
     }
+
+    
+
+
+    // app.get('/regions', (req, res) => {
+    //   const continent = req.query.continent;
+      
+    //   if (continent) {
+    //     // Logic to handle specific continent query, e.g., fetching bird data
+    //     res.render('regionResults', { continent });
+    //   } else {
+    //     res.render('regions'); // show region selector page
+    //   }
+    // });
+
 
     // Render the browse page, passing in the species array.
     res.render('pages/browse', {
