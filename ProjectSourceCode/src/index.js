@@ -115,9 +115,9 @@ app.use(session({
   saveUninitialized: false,
   resave: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV,
     maxAge: 30 * 24 * 60 * 60 * 1000,
-    httpOnly: true
+    httpOnly: false;
   }
 }));
 app.use((req, res, next) => { res.locals.user = req.session.user || null; next(); });
