@@ -13,7 +13,7 @@ services:
     working_dir: /repository
     env_file: .env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
     depends_on:
       - db
     ports:
