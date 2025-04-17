@@ -18,6 +18,7 @@ const path          = require('path');
 const pgp           = require('pg-promise')();
 const bodyParser    = require('body-parser');
 const session       = require('express-session');
+const PgStore       = require('connect-pg-simple')(session);
 const bcrypt        = require('bcryptjs');
 const multer        = require('multer');
 const axios         = require('axios');
@@ -100,12 +101,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'resources')));
 app.use(session({
-  secret           : process.env.SESSION_SECRET,
+  store: new PgStore({
+    pgPromise: db
+  }),
+  secret: process.env.SESSION_SECRET,
   saveUninitialized: false,
-  resave           : false,
-  cookie           : {
-    secure : process.env.NODE_ENV === 'production',
-    maxAge : 30 * 24 * 60 * 60 * 1000,
+  resave: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true
   }
 }));
