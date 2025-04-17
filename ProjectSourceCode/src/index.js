@@ -429,6 +429,12 @@ app.get('/', async (req, res) => {
   }
 });
 
+  app.get('/regions', (req, res) => {
+    res.render('pages/regions');
+  });
+
+
+
 app.get('/profile', auth, async (req, res) => {
   try {
     const s = await db.one('SELECT * FROM students WHERE student_id=$1', [req.session.user.id]);
@@ -491,6 +497,21 @@ app.get('/browse', async (req, res) => {
         images: info.image ? [info.image] : []
       });
     }
+
+    
+
+
+    // app.get('/regions', (req, res) => {
+    //   const continent = req.query.continent;
+      
+    //   if (continent) {
+    //     // Logic to handle specific continent query, e.g., fetching bird data
+    //     res.render('regionResults', { continent });
+    //   } else {
+    //     res.render('regions'); // show region selector page
+    //   }
+    // });
+
 
     // Render the browse page, passing in the species array.
     res.render('pages/browse', {
