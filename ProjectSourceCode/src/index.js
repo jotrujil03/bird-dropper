@@ -114,7 +114,7 @@ const auth = (req, res, next) => { if (!req.session.user) return res.redirect('/
 
 // ──────────────────  DATABASE  ──────────────────
 const db = pgp({
-  host    : 'db',
+  //host    : 'db',
   port    : 5432,
   database: process.env.POSTGRES_DB,
   user    : process.env.POSTGRES_USER,
