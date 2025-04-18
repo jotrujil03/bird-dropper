@@ -72,16 +72,51 @@
               <p class="fs-5">{{user.created_at}}</p>
             </div>
           </div>
-              <div class="d-grid gap-2 d-md-flex justify-content-center">
-              <button type="submit" class="btn btn-primary btn-lg px-4">Save Profile</button>
-              <a href="/profile" class="btn btn-outline-secondary btn-lg px-4">Cancel</a>
-            </div>
-          </form>
-
-
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- User Posts Section -->
+  <div class="container mt-5">
+    <h3 class="text-center mb-4">Your Bird Sightings</h3>
+    
+    {{#if hasPosts}}
+      <div class="row row-cols-1 row-cols-md-3 g-4">
+        {{#each userPosts}}
+          <div class="col">
+            <div class="card h-100 shadow-sm">
+              <img src="{{this.image_url}}" class="card-img-top" alt="Bird sighting" style="height: 200px; object-fit: cover;">
+              <div class="card-body">
+                <p class="card-text">{{this.caption}}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-muted">{{formatDate this.created_at}}</small>
+                  <span class="badge bg-primary rounded-pill">
+                    <i class="fas fa-heart"></i> {{this.like_count}}
+                  </span>
+                </div>
+              </div>
+              <div class="card-footer bg-transparent border-top-0">
+                <a href="/social" class="btn btn-sm btn-outline-primary">View in Feed</a>
+              </div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <div class="text-center py-5">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <i class="fas fa-dove fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No sightings yet</h4>
+            <p class="text-muted">Share your first bird watching experience!</p>
+            <a href="/social" class="btn btn-primary mt-3">
+              <i class="fas fa-plus"></i> Create Post
+            </a>
+          </div>
+        </div>
+      </div>
+    {{/if}}
   </div>
 </div>
 
@@ -103,7 +138,7 @@
     });
 
     uploadForm.addEventListener('submit', async (event) => {
-      event.preventDefault(); // Prevent the default form submission
+      event.preventDefault();
 
       const formData = new FormData(uploadForm);
       uploadStatus.textContent = 'Uploading...';

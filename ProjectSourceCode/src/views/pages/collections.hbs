@@ -1,12 +1,47 @@
 {{> header}}
 
+<style>
+  .photo-wrapper {
+    position: relative;
+    overflow: hidden;
+    height: 300px;
+  }
+  .photo-wrapper .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .photo-wrapper:hover .overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+</style>
+
 <div class="container py-5">
+
   <div class="text-center mb-4">
-    <h2 class="display-4 mb-3">{{user.username}}'s Collection </h2>
-    <button id="add-photo-btn" class="btn btn-outline-primary btn-lg">
-      <i class="fas fa-upload me-2"></i>Add Bird 
-    </button>
-    <input type="file" id="collectionImages" name="collectionImages" class="d-none" multiple>
+    <h2 class="display-4 mb-3">{{user.username}}'s Collection</h2>
+    {{#if isOwner}}
+      <button id="add-photo-btn" class="btn btn-outline-primary btn-lg">
+        <i class="fas fa-upload me-2"></i>Add Bird
+      </button>
+      <input
+        type="file"
+        id="collectionImages"
+        name="collectionImages"
+        class="d-none"
+        multiple
+      >
+    {{/if}}
   </div>
 
   {{#if error}}
@@ -19,43 +54,73 @@
     {{#each photos}}
       <div class="col-12 col-md-6 col-lg-4">
         <div class="card h-100 shadow-sm">
-          <div class="position-relative overflow-hidden" style="height:300px;">
-            <img src="{{this.image_url}}" class="card-img-top h-100" alt="Photo" style="object-fit:cover;">
-            <div class="overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50" style="opacity:0; transition:opacity .3s;">
-              <button class="btn btn-light edit-desc-btn" data-id="{{this.collection_id}}" data-desc="{{this.description}}">
-                <i class="fas fa-edit me-1"></i>Edit Description
-              </button>
-            </div>
+
+          <div class="photo-wrapper">
+            <img
+              src="{{this.image_url}}"
+              class="card-img-top h-100"
+              style="object-fit:cover;"
+              alt="Photo"
+            >
+            {{#if ../isOwner}}
+              <div class="overlay">
+                <button
+                  class="btn btn-light edit-desc-btn"
+                  data-id="{{this.collection_id}}"
+                  data-desc="{{this.description}}"
+                >
+                  <i class="fas fa-edit me-1"></i>Edit Description
+                </button>
+              </div>
+            {{/if}}
           </div>
+
           <div class="card-body text-center">
             <p class="card-text desc-text mb-2" data-id="{{this.collection_id}}">
-              {{#if this.description}}{{this.description}}{{else}}<span class="text-muted">No description</span>{{/if}}
+              {{#if this.description}}
+                {{this.description}}
+              {{else}}
+                <span class="text-muted">No description</span>
+              {{/if}}
             </p>
-            <small class="text-muted">{{formatDate this.created_at}}</small>
+            <small class="text-muted d-block mt-2">{{formatDate this.created_at}}</small>
           </div>
         </div>
       </div>
     {{else}}
       <div class="col-12">
-        <p class="text-center text-muted">No photos yet. Click "Add Photos" to get started!</p>
+        <p class="text-center text-muted">
+          No photos yet.
+          {{#if isOwner}}
+            Click “Add Bird” to get started!
+          {{else}}
+            This user has no photos yet.
+          {{/if}}
+        </p>
       </div>
     {{/each}}
   </div>
 </div>
 
-<!-- Description Modal -->
-<div class="modal fade" id="descModal" tabindex="-1" aria-labelledby="descModalLabel" aria-hidden="true">
+<div class="modal fade" id="descModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <form id="desc-form" class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="descModalLabel">Edit Description</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title">Edit Description</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <textarea class="form-control" id="desc-input" rows="4" placeholder="Enter a description..."></textarea>
+        <textarea
+          id="desc-input"
+          class="form-control"
+          rows="4"
+          placeholder="Enter a description..."
+        ></textarea>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </form>
@@ -63,25 +128,23 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const addBtn = document.getElementById('add-photo-btn');
-    const fileInput = document.getElementById('collectionImages');
-    const statusDiv = document.getElementById('upload-collection-status');
-    const grid = document.getElementById('collection-grid');
+document.addEventListener('DOMContentLoaded', () => {
+  const addBtn    = document.getElementById('add-photo-btn');
+  const fileInput = document.getElementById('collectionImages');
+  const statusDiv = document.getElementById('upload-collection-status');
+  const grid      = document.getElementById('collection-grid');
 
-    // Trigger file selector
+  if (addBtn && fileInput) {
     addBtn.addEventListener('click', () => fileInput.click());
-
-    // Handle file selection and upload
     fileInput.addEventListener('change', async () => {
       const files = Array.from(fileInput.files);
       if (!files.length) return;
+      statusDiv.textContent = 'Uploading…';
       const formData = new FormData();
       files.forEach(f => formData.append('collectionImages', f));
-      statusDiv.textContent = 'Uploading...';
 
       try {
-        const res = await fetch('/collections/upload', {
+        const res  = await fetch('/collections/upload', {
           method: 'POST',
           body: formData,
           credentials: 'same-origin'
@@ -94,72 +157,71 @@
           col.className = 'col-12 col-md-6 col-lg-4';
           col.innerHTML = `
             <div class="card h-100 shadow-sm">
-              <div class="position-relative overflow-hidden" style="height:300px;">
+              <div class="photo-wrapper">
                 <img src="${photo.image_url}" class="card-img-top h-100" style="object-fit:cover;" alt="Photo">
-                <div class="overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50" style="opacity:0; transition:opacity .3s;">
+                <div class="overlay">
                   <button class="btn btn-light edit-desc-btn" data-id="${photo.collection_id}" data-desc="">
                     <i class="fas fa-edit me-1"></i>Edit Description
                   </button>
                 </div>
               </div>
               <div class="card-body text-center">
-                <p class="card-text desc-text mb-2" data-id="${photo.collection_id}"><span class="text-muted">No description</span></p>
-                <small class="text-muted">Just now</small>
+                <p class="card-text desc-text mb-2" data-id="${photo.collection_id}">
+                  <span class="text-muted">No description</span>
+                </p>
+                <small class="text-muted d-block mt-2">Just now</small>
               </div>
-            </div>
-          `;
+            </div>`;
           grid.prepend(col);
         });
+
         statusDiv.textContent = 'Upload successful!';
         fileInput.value = '';
       } catch (err) {
-        console.error(err);
+        console.error('Upload error:', err);
         statusDiv.textContent = 'Upload failed: ' + err.message;
       }
     });
+  }
 
-    // Hover overlay
-    document.body.addEventListener('mouseover', e => {
-      const wrap = e.target.closest('.position-relative');
-      if (wrap) wrap.querySelector('.overlay').style.opacity = 1;
-    });
-    document.body.addEventListener('mouseout', e => {
-      const wrap = e.target.closest('.position-relative');
-      if (wrap) wrap.querySelector('.overlay').style.opacity = 0;
-    });
+  let currentId;
+  const descModal   = new bootstrap.Modal(document.getElementById('descModal'));
 
-    // Description modal logic
-    let currentId;
-    const descModal = new bootstrap.Modal(document.getElementById('descModal'));
-
-    document.body.addEventListener('click', e => {
-      if (e.target.closest('.edit-desc-btn')) {
-        const btn = e.target.closest('.edit-desc-btn');
-        currentId = btn.dataset.id;
-        document.getElementById('desc-input').value = btn.dataset.desc || '';
-        descModal.show();
-      }
-    });
-
-    document.getElementById('desc-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      const desc = document.getElementById('desc-input').value.trim();
-      try {
-        const res = await fetch(`/collections/description/${currentId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ description: desc }),
-          credentials: 'same-origin'
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Failed to save description');
-        document.querySelector(`.desc-text[data-id=\"${currentId}\"]`).textContent = desc || 'No description';
-        descModal.hide();
-      } catch (err) {
-        alert(err.message);
-      }
-    });
+  document.body.addEventListener('click', e => {
+    const btn = e.target.closest('.edit-desc-btn');
+    if (!btn) return;
+    currentId = btn.dataset.id;
+    document.getElementById('desc-input').value = btn.dataset.desc || '';
+    descModal.show();
   });
+
+  document.getElementById('desc-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const desc = document.getElementById('desc-input').value.trim();
+    try {
+      const res  = await fetch(`/collections/description/${currentId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc }),
+        credentials: 'same-origin'
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Save failed');
+
+      const p = document.querySelector(`.desc-text[data-id="${currentId}"]`);
+      p.textContent = desc || 'No description';
+
+      document
+        .querySelector(`.edit-desc-btn[data-id="${currentId}"]`)
+        .dataset.desc = desc;
+
+      descModal.hide();
+    } catch (err) {
+      console.error('Description save error:', err);
+      alert(err.message);
+    }
+  });
+});
 </script>
 
 {{> footer}}
