@@ -34,9 +34,22 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 > * A specific database system (and instructions on how to set it up)
 > * Any required API keys or environment variables
 
-## 🚀 Instructions on How to Run the App
+## 🚀 Instructions on How to Run the App Locally
 
-> First off: ```git clone https://github.com/jotrujil03/bird-dropper.git```
+> First off you'll need to clone the repo:
+> ```git clone https://github.com/jotrujil03/bird-dropper.git```
+> Then go to the newly created `bird-dropper` folder:
+> ```cd bird-dopper/ProjectSourceCode```
+> Next you'll need to create an `.env` file:
+>  ```touch .env```
+> Add these lines to your .env file:
+> ``` POSTGRES_HOST='db'
+> POSTGRES_DB='users_db'
+> POSTGRES_USER='postgres'
+> POSTGRES_PASSWORD='pwd'
+> SUPABASE_BUCKET=''
+> SUPABASE_URL=''
+> SUPABASE_SERVICE_KEY=''```
 
 ## 🧪 How to Run Tests
 
