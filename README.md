@@ -38,7 +38,7 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 >
 > * First off you'll need to clone the repo:
 > ```git clone https://github.com/jotrujil03/bird-dropper.git```
-> * Then go to the newly created `bird-dropper` folder, then into the sub-directory `ProjectSourceCode` (or just run the command below):
+> * Then go to the newly created `bird-dropper` folder, then into the sub-directory `ProjectSourceCode` (or just run this command):
 > ```cd bird-dopper/ProjectSourceCode```
 > * Next you'll need to create an `.env` file:
 >  ```touch .env```
