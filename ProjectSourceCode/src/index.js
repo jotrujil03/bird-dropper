@@ -380,6 +380,9 @@ app.get('/collections', auth, (req, res) => {
 
 app.get('/collections/:userId', auth, async (req, res) => {
   const userId = parseInt(req.params.userId, 10);
+  if (isNaN(userId)) {
+    return res.status(400).send('Invalid user ID');
+  }
   const myId   = parseInt(req.session.user.id,   10);
   const isOwner = myId === userId;
 
