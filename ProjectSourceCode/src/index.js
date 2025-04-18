@@ -383,8 +383,6 @@ app.get('/collections/:userId', auth, async (req, res) => {
   const myId   = parseInt(req.session.user.id,   10);
   const isOwner = myId === userId;
 
-  console.log('collections/:userId →', { myId, userId, isOwner });
-
   try {
     const owner = await db.oneOrNone(
       'SELECT student_id, username FROM students WHERE student_id = $1',
