@@ -43,12 +43,12 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 >  ```touch .env```
 > * Add these lines to your .env file:
 > ``` POSTGRES_HOST='db'
-> POSTGRES_DB='users_db'
-> POSTGRES_USER='postgres'
-> POSTGRES_PASSWORD='pwd'
-> SUPABASE_BUCKET=''
-> SUPABASE_URL=''
-> SUPABASE_SERVICE_KEY=''
+POSTGRES_DB='users_db'
+POSTGRES_USER='postgres'
+POSTGRES_PASSWORD='pwd'
+SUPABASE_BUCKET=''
+SUPABASE_URL=''
+SUPABASE_SERVICE_KEY=''
 > ```
 > * You'll need to edit one other file. Go to the `/src/init_data` folder and uncomment the `-- \c users_db` line by removing the two dashes in front.
 > * Afterwards you should be good to go, so run the command `docker-compose up`, and the rest of the setup should be handled automatically.
