@@ -373,8 +373,6 @@ app.get('/social', auth, async (req, res) => {
 // ────────────────────────────────────────────────
 //                 COLLECTIONS
 // ────────────────────────────────────────────────
-
-// Show the collections page
 app.get('/collections', auth, async (req, res) => {
   try {
     const rows = await db.any(
@@ -403,12 +401,7 @@ app.get('/collections', auth, async (req, res) => {
 });
 
 
-// Handle uploads via AJAX (JSON)
-app.post(
-  '/collections/upload',
-  auth,
-  upload.array('collectionImages', 10),
-  async (req, res) => {
+app.post('/collections/upload', auth, upload.array('collectionImages', 10), async (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, error: 'No files uploaded.' });
     }
@@ -421,9 +414,9 @@ app.post(
           .replace(/-+/g, '-');
         const pathInBucket = `collections/${req.session.user.id}/${Date.now()}-${safeName}`;
 
-        // upload
         const { error: upErr } = await supabase
-          .storage.from(BUCKET)
+          .storage
+          .from(BUCKET)
           .upload(pathInBucket, file.buffer, {
             contentType: file.mimetype,
             upsert: false
@@ -433,23 +426,23 @@ app.post(
           return res.status(500).json({ success: false, error: 'Upload failed.' });
         }
 
-        // get public URL
         const { data: urlData, error: urlErr } = supabase
-          .storage.from(BUCKET)
+          .storage
+          .from(BUCKET)
           .getPublicUrl(pathInBucket);
         if (urlErr) {
           console.error('Supabase getPublicUrl error:', urlErr);
           return res.status(500).json({ success: false, error: 'Could not get public URL.' });
         }
-
-        // save in DB
-        await db.none(
-          'INSERT INTO collections(user_id,image_url,created_at) VALUES($1,$2,NOW())',
+        const row = await db.one(
+          `INSERT INTO collections (user_id, image_url, created_at)
+           VALUES ($1, $2, NOW())
+           RETURNING collection_id, image_url, description, created_at`,
           [req.session.user.id, urlData.publicUrl]
         );
-        added.push({ image_url: urlData.publicUrl });
-      }
 
+        added.push(row);
+      }
       res.json({ success: true, photos: added });
     } catch (e) {
       console.error('Collection upload exception:', e);
@@ -463,14 +456,12 @@ app.post('/collections/description/:id', auth, async (req, res) => {
   const { description } = req.body;
 
   try {
-    // Only update if it belongs to the logged‑in user
     const result = await db.result(
       'UPDATE collections SET description = $1 WHERE collection_id = $2 AND user_id = $3',
       [description, colId, req.session.user.id]
     );
 
     if (result.rowCount === 0) {
-      // no rows updated → either bad ID or not your photo
       return res.status(404).json({ success: false, error: 'Photo not found.' });
     }
 
