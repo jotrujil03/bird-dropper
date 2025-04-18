@@ -31,7 +31,7 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 
 >
 > * Node.js, npm, postgresql, docker-compose or docker
-> * A SupaBase API key
+> * A SupaBase account, and service key.
 
 ## 🚀 Instructions on How to Run the App Locally
 
@@ -47,11 +47,13 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 POSTGRES_DB='users_db'
 POSTGRES_USER='postgres'
 POSTGRES_PASSWORD='pwd'
-SUPABASE_BUCKET=''
-SUPABASE_URL=''
-SUPABASE_SERVICE_KEY=''
+SESSION_SECRET='<CHANGE THIS TO ANYTHING YOU'D LIKE>'
+ADMIN_PASSWORD='<CHANGE THIS TO ANYTHING YOU'D LIKE>'
+SUPABASE_BUCKET='post-images'
+SUPABASE_URL='<ENTER YOUR SUPABASE URL HERE>'
+SUPABASE_SERVICE_KEY='<ENTER YOUR SUPABASE API KEY HERE>'
 ```
-> * You'll need to edit one other file. Go to the `/src/init_data` folder and uncomment the `-- \c users_db` line by removing the two dashes in front.
+> * You'll need to edit one other file. Go to the `/src/init_data` folder, then edit the `create.sql` file and uncomment the `-- \c users_db` line by removing the two dashes in front.
 > * Afterwards you should be good to go, so run the command `docker-compose up`, and the rest of the setup should be handled automatically.
 
 ## 🧪 How to Run Tests
