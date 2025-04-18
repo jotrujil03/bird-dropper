@@ -480,7 +480,7 @@ app.post('/collections/description/:id', auth, async (req, res) => {
     if (result.rowCount === 0) {
       return res
         .status(404)
-        .json({ success: false, error: 'Photo not found or you are not the owner.' });
+        .json({ success: false, error: 'Collection not found or you are not the owner.' });
     }
     return res.json({ success: true });
   } catch (err) {
