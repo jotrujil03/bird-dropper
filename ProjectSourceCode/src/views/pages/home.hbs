@@ -156,6 +156,16 @@
           <a href="/browse" class="btn btn-light">Browse Popular Birds</a>
         </section>
 
+        <div class="text-center my-3">
+        <button id="random-bird-btn" class="btn btn-success">
+          <i class="fas fa-dove"></i> Random Bird
+        </button>
+      </div>
+
+<!-- Random Bird Result -->
+<div id="random-bird-result" class="container mt-4"></div>
+
+
         <section class="mt-5">
           <h5>Popular Searches</h5>
           <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
@@ -187,5 +197,127 @@
     });
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+const birds = [
+  {
+    name: "American Robin",
+    habitat: "Gardens and parks across North America",
+    img: "/images/birds/american_robin.jpg"
+  },
+  {
+    name: "Bald Eagle",
+    habitat: "Near rivers and lakes in North America",
+    img: "/images/birds/bald_eagle.jpg"
+  },
+  {
+    name: "Northern Cardinal",
+    habitat: "Woodlands and suburban gardens in Eastern North America",
+    img: "/images/birds/northern_cardinal.jpg"
+  },
+  {
+    name: "Blue Jay",
+    habitat: "Forests and suburban backyards",
+    img: "/images/birds/blue_jay.jpg"
+  },
+  {
+    name: "Mourning Dove",
+    habitat: "Fields and urban areas",
+    img: "/images/birds/mourning_dove.jpg"
+  },
+  {
+    name: "Harpy Eagle",
+    habitat: "Amazon rainforest",
+    img: "/images/birds/harpy_eagle.jpg"
+  },
+  {
+    name: "Toco Toucan",
+    habitat: "Forests in central South America",
+    img: "/images/birds/toco_toucan.jpg"
+  },
+  {
+    name: "Scarlet Macaw",
+    habitat: "Rainforests in South America",
+    img: "/images/birds/scarlet_macaw.jpg"
+  },
+  {
+    name: "Andean Condor",
+    habitat: "Andes mountains",
+    img: "/images/birds/andean_condor.jpg"
+  },
+  {
+    name: "Ruby-throated Hummingbird",
+    habitat: "Eastern North America gardens",
+    img: "/images/birds/ruby_hummingbird.jpg"
+  },
+  {
+    name: "Great Blue Heron",
+    habitat: "Wetlands across North America",
+    img: "/images/birds/great_blue_heron.jpg"
+  },
+  {
+    name: "Canada Goose",
+    habitat: "Lakes and ponds in North America",
+    img: "/images/birds/canada_goose.jpg"
+  },
+  {
+    name: "Peregrine Falcon",
+    habitat: "Cliffs and tall buildings worldwide",
+    img: "/images/birds/peregrine_falcon.jpg"
+  },
+  {
+    name: "King Vulture",
+    habitat: "Tropical forests in South America",
+    img: "/images/birds/king_vulture.jpg"
+  },
+  {
+    name: "Hoatzin",
+    habitat: "Swamps and riversides of the Amazon",
+    img: "/images/birds/hoatzin.jpg"
+  },
+  {
+    name: "Cock-of-the-rock",
+    habitat: "Andean cloud forests",
+    img: "/images/birds/cock_of_the_rock.jpg"
+  },
+  {
+    name: "Jabiru Stork",
+    habitat: "Wetlands in South America",
+    img: "/images/birds/jabiru_stork.jpg"
+  },
+  {
+    name: "Rhea",
+    habitat: "Grasslands of Argentina and Brazil",
+    img: "/images/birds/rhea.jpg"
+  },
+  {
+    name: "European Robin",
+    habitat: "European woodlands and gardens",
+    img: "/images/birds/european_robin.jpg"
+  },
+  {
+    name: "Common Blackbird",
+    habitat: "European forests and parks",
+    img: "/images/birds/common_blackbird.jpg"
+  }
+];
+
+document.getElementById("random-bird-btn").addEventListener("click", function() {
+  const randomIndex = Math.floor(Math.random() * birds.length);
+  const bird = birds[randomIndex];
+
+  document.getElementById("random-bird-result").innerHTML = `
+    <div class="card shadow-sm mx-auto" style="max-width: 600px; border-radius:20px;">
+      <img src="${bird.img}" class="card-img-top" alt="${bird.name}" style="height:350px; object-fit:cover;">
+      <div class="card-body">
+        <h3 class="card-title">${bird.name}</h3>
+        <p class="card-text text-muted">${bird.habitat}</p>
+      </div>
+    </div>
+  `;
+});
+</script>
+
+
 </body>
 </html>
