@@ -158,7 +158,7 @@
     </header>
 
     <!-- FEED -->
-    <section class="feed">
+      <section class="feed">
       <h2>Recent Posts</h2>
       {{#if posts}}
         {{#each posts}}
@@ -166,7 +166,7 @@
             <div class="post-header">
               <img src="{{user.avatar}}" alt="avatar" class="avatar">
               <div class="post-info">
-                <h3 class="username">{{user.username}}</h3>
+                  <a href="/collections/{{user.id}}" class="username">{{user.username}}</a>
                 <span class="timestamp">{{formatDate createdAt}}</span>
               </div>
               {{#if (eq ../user.id user.id)}}

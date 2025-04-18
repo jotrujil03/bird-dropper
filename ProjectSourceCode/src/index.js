@@ -370,41 +370,57 @@ app.get('/social', auth, async (req, res) => {
     res.render('pages/social', { title: 'Social', posts: [], error: 'Could not load posts' });
   }
 });
+
 // ────────────────────────────────────────────────
 //                 COLLECTIONS
 // ────────────────────────────────────────────────
-app.get('/collections', auth, async (req, res) => {
+app.get('/collections', auth, (req, res) => {
+  res.redirect(`/collections/${req.session.user.id}`);
+});
+
+app.get('/collections/:userId', auth, async (req, res) => {
+  const userId = parseInt(req.params.userId, 10);
+  const myId   = parseInt(req.session.user.id,   10);
+  const isOwner = myId === userId;
+
+  console.log('collections/:userId →', { myId, userId, isOwner });
+
   try {
-    const rows = await db.any(
-      `SELECT
-         collection_id,
-         image_url,
-         description,
-         created_at
-       FROM collections
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [req.session.user.id]
+    const owner = await db.oneOrNone(
+      'SELECT student_id, username FROM students WHERE student_id = $1',
+      [userId]
     );
-    res.render('pages/collections', {
-      title : `${req.session.user.username}'s Collection`,
-      photos: rows
+    if (!owner) return res.status(404).send('User not found');
+
+    const photos = await db.any(
+      `SELECT collection_id, image_url, description, created_at
+         FROM collections
+        WHERE user_id = $1
+     ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    return res.render('pages/collections', {
+      user:           owner,
+      photos,
+      isOwner,               
+      sessionUserId:  myId   
     });
   } catch (err) {
-    console.error('Collections fetch error:', err);
-    res.render('pages/collections', {
-      title : `${req.session.user.username}'s Collection`,
-      photos: [],
-      error : 'Failed to load collections.'
-    });
+    console.error('Error loading collection:', err);
+    return res.status(500).send('Error loading collection');
   }
 });
 
-
-app.post('/collections/upload', auth, upload.array('collectionImages', 10), async (req, res) => {
+app.post(
+  '/collections/upload',
+  auth,
+  upload.array('collectionImages', 10),
+  async (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, error: 'No files uploaded.' });
     }
+
     try {
       const added = [];
       for (const file of req.files) {
@@ -412,6 +428,7 @@ app.post('/collections/upload', auth, upload.array('collectionImages', 10), asyn
           .normalize('NFKD')
           .replace(/[^\w.\-]+/g, '-')
           .replace(/-+/g, '-');
+
         const pathInBucket = `collections/${req.session.user.id}/${Date.now()}-${safeName}`;
 
         const { error: upErr } = await supabase
@@ -434,6 +451,7 @@ app.post('/collections/upload', auth, upload.array('collectionImages', 10), asyn
           console.error('Supabase getPublicUrl error:', urlErr);
           return res.status(500).json({ success: false, error: 'Could not get public URL.' });
         }
+
         const row = await db.one(
           `INSERT INTO collections (user_id, image_url, created_at)
            VALUES ($1, $2, NOW())
@@ -443,16 +461,17 @@ app.post('/collections/upload', auth, upload.array('collectionImages', 10), asyn
 
         added.push(row);
       }
-      res.json({ success: true, photos: added });
+
+      return res.json({ success: true, photos: added });
     } catch (e) {
       console.error('Collection upload exception:', e);
-      res.status(500).json({ success: false, error: 'Failed to upload collection images.' });
+      return res.status(500).json({ success: false, error: 'Failed to upload collection images.' });
     }
   }
 );
 
 app.post('/collections/description/:id', auth, async (req, res) => {
-  const colId = req.params.id;
+  const colId       = parseInt(req.params.id, 10);
   const { description } = req.body;
 
   try {
@@ -460,17 +479,18 @@ app.post('/collections/description/:id', auth, async (req, res) => {
       'UPDATE collections SET description = $1 WHERE collection_id = $2 AND user_id = $3',
       [description, colId, req.session.user.id]
     );
-
     if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'Photo not found.' });
+      return res
+        .status(404)
+        .json({ success: false, error: 'Photo not found or you are not the owner.' });
     }
-
     return res.json({ success: true });
   } catch (err) {
     console.error('Description save error:', err);
     return res.status(500).json({ success: false, error: 'Could not save description.' });
   }
 });
+
 
 // ────────────────────────────────────────────────
 //          NOTIFICATIONS API  (likes/comments)
