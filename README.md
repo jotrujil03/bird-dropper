@@ -35,6 +35,7 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 
 ## 🚀 Instructions on How to Run the App Locally
 
+>
 > * First off you'll need to clone the repo:
 > ```git clone https://github.com/jotrujil03/bird-dropper.git```
 > * Then go to the newly created `bird-dropper` folder, then into the sub-directory `ProjectSourceCode` (or just run the command below):
@@ -42,14 +43,14 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 > * Next you'll need to create an `.env` file:
 >  ```touch .env```
 > * Add these lines to your .env file:
-> ``` POSTGRES_HOST='db'
+``` POSTGRES_HOST='db'
 POSTGRES_DB='users_db'
 POSTGRES_USER='postgres'
 POSTGRES_PASSWORD='pwd'
 SUPABASE_BUCKET=''
 SUPABASE_URL=''
 SUPABASE_SERVICE_KEY=''
-> ```
+```
 > * You'll need to edit one other file. Go to the `/src/init_data` folder and uncomment the `-- \c users_db` line by removing the two dashes in front.
 > * Afterwards you should be good to go, so run the command `docker-compose up`, and the rest of the setup should be handled automatically.
 
