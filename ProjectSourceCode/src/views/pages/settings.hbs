@@ -139,10 +139,6 @@
     --text-dark: #343a40;
   }
 
-  html {
-    font-size: 1.125rem;
-  }
-
   .settings__title {
     font-size: 2.75rem;
     color: var(--text-dark);
@@ -195,6 +191,20 @@
     box-shadow: none;
     border-color: var(--primary);
   }
+
+.settings {
+  transform: scale(1.15);
+  transform-origin: top center;
+}
+
+@media (max-width: 991.98px) {
+  /* Prevent scaling on smaller screens */
+  .settings {
+    transform: none;
+  }
+}
+
+
 </style>
 
 <script>

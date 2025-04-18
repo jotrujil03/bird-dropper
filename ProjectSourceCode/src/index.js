@@ -378,6 +378,107 @@ app.get('/social', auth, async (req, res) => {
     res.render('pages/social', { title: 'Social', posts: [], error: 'Could not load posts' });
   }
 });
+// ────────────────────────────────────────────────
+//                 COLLECTIONS
+// ────────────────────────────────────────────────
+app.get('/collections', auth, async (req, res) => {
+  try {
+    const rows = await db.any(
+      `SELECT
+         collection_id,
+         image_url,
+         description,
+         created_at
+       FROM collections
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+      [req.session.user.id]
+    );
+    res.render('pages/collections', {
+      title : `${req.session.user.username}'s Collection`,
+      photos: rows
+    });
+  } catch (err) {
+    console.error('Collections fetch error:', err);
+    res.render('pages/collections', {
+      title : `${req.session.user.username}'s Collection`,
+      photos: [],
+      error : 'Failed to load collections.'
+    });
+  }
+});
+
+
+app.post('/collections/upload', auth, upload.array('collectionImages', 10), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, error: 'No files uploaded.' });
+    }
+    try {
+      const added = [];
+      for (const file of req.files) {
+        const safeName = file.originalname
+          .normalize('NFKD')
+          .replace(/[^\w.\-]+/g, '-')
+          .replace(/-+/g, '-');
+        const pathInBucket = `collections/${req.session.user.id}/${Date.now()}-${safeName}`;
+
+        const { error: upErr } = await supabase
+          .storage
+          .from(BUCKET)
+          .upload(pathInBucket, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false
+          });
+        if (upErr) {
+          console.error('Supabase upload error:', upErr);
+          return res.status(500).json({ success: false, error: 'Upload failed.' });
+        }
+
+        const { data: urlData, error: urlErr } = supabase
+          .storage
+          .from(BUCKET)
+          .getPublicUrl(pathInBucket);
+        if (urlErr) {
+          console.error('Supabase getPublicUrl error:', urlErr);
+          return res.status(500).json({ success: false, error: 'Could not get public URL.' });
+        }
+        const row = await db.one(
+          `INSERT INTO collections (user_id, image_url, created_at)
+           VALUES ($1, $2, NOW())
+           RETURNING collection_id, image_url, description, created_at`,
+          [req.session.user.id, urlData.publicUrl]
+        );
+
+        added.push(row);
+      }
+      res.json({ success: true, photos: added });
+    } catch (e) {
+      console.error('Collection upload exception:', e);
+      res.status(500).json({ success: false, error: 'Failed to upload collection images.' });
+    }
+  }
+);
+
+app.post('/collections/description/:id', auth, async (req, res) => {
+  const colId = req.params.id;
+  const { description } = req.body;
+
+  try {
+    const result = await db.result(
+      'UPDATE collections SET description = $1 WHERE collection_id = $2 AND user_id = $3',
+      [description, colId, req.session.user.id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Photo not found.' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Description save error:', err);
+    return res.status(500).json({ success: false, error: 'Could not save description.' });
+  }
+});
 
 // ────────────────────────────────────────────────
 //          NOTIFICATIONS API  (likes/comments)
@@ -436,12 +537,6 @@ app.get('/', async (req, res) => {
     res.render('pages/home', { title: 'Home', user: req.session.user, theme: 'light', language: 'en' });
   }
 });
-
-  app.get('/regions', (req, res) => {
-    res.render('pages/regions');
-  });
-
-
 
 app.get('/profile', auth, async (req, res) => {
   try {
@@ -506,21 +601,6 @@ app.get('/browse', async (req, res) => {
       });
     }
 
-    
-
-
-    // app.get('/regions', (req, res) => {
-    //   const continent = req.query.continent;
-      
-    //   if (continent) {
-    //     // Logic to handle specific continent query, e.g., fetching bird data
-    //     res.render('regionResults', { continent });
-    //   } else {
-    //     res.render('regions'); // show region selector page
-    //   }
-    // });
-
-
     // Render the browse page, passing in the species array.
     res.render('pages/browse', {
       title   : 'Browse Popular Bird Species',
@@ -534,6 +614,38 @@ app.get('/browse', async (req, res) => {
   }
 });
 
+
+app.get('/fact-of-the-day', (req, res) => {
+  const birdFacts = [
+    "Hummingbirds can fly backwards.",
+    "Owls can rotate their necks about 270 degrees.",
+    "Peregrine Falcons dive at speeds over 240 mph.",
+    "Penguins have knees, although they're hidden inside their bodies.",
+    "The Ostrich is the largest bird in the world.",
+    "Woodpeckers can peck 20 times per second.",
+    "Flamingos get their color from the food they eat.",
+    "Parrots can learn hundreds of words.",
+    "Some ducks sleep with one eye open.",
+    "Crows are known to recognize human faces.",
+    "Albatrosses can fly thousands of miles without stopping.",
+    "The chicken is the closest living relative to the Tyrannosaurus Rex.",
+    "Some birds migrate tens of thousands of miles each year.",
+    "The Kiwi bird lays eggs nearly as big as its own body.",
+    "Bald Eagles build some of the largest nests in the world.",
+    "Swifts can sleep while flying.",
+    "The Emu is Australia's largest bird and second largest bird in the world.",
+    "The Northern Cardinal can live up to 15 years in the wild.",
+    "Geese mate for life and mourn the loss of their partners.",
+    "The smallest bird egg belongs to the hummingbird."
+  ];
+
+  // Pick a fact based on today's date
+  const date = new Date();
+  const todayIndex = date.getDate() % birdFacts.length;
+  const factOfTheDay = birdFacts[todayIndex];
+
+  res.render('pages/factOfTheDay', { fact: factOfTheDay });
+});
 
 
 

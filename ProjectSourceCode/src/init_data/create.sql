@@ -63,3 +63,16 @@ CREATE TABLE IF NOT EXISTS comments (
     comment    TEXT    NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
+-- ===========================
+--  COLLECTIONS
+-- ===========================
+CREATE TABLE IF NOT EXISTS collections (
+  collection_id SERIAL PRIMARY KEY,
+  user_id       INTEGER    NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+  image_url     VARCHAR(255) NOT NULL,
+  description   TEXT,
+  created_at    TIMESTAMP   DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_collections_user_id
+  ON collections(user_id);
