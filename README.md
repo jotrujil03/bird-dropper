@@ -31,7 +31,7 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 
 >
 > * Node.js, npm, postgresql, docker-compose or docker
-> * A SupaBase account, and service key.
+> * A supabase account, and service key. ![Click here for supabase](https://supabase.com/)
 
 ## 🚀 Instructions on How to Run the App Locally
 
@@ -40,7 +40,7 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 > ```git clone https://github.com/jotrujil03/bird-dropper.git -b dev```
 > * Then go to the newly created `bird-dropper` folder, then into the sub-directory `ProjectSourceCode` (or just run this command):
 > ```cd bird-dopper/ProjectSourceCode```
-> * Next you'll need to create an `.env` file:
+> * Next you'll need to create an `.env` file, do so by running the following command:
 >  ```touch .env```
 > * Add these lines to your .env file:
 ``` POSTGRES_HOST='db'
@@ -54,7 +54,7 @@ SUPABASE_URL='<ENTER YOUR SUPABASE URL HERE>'
 SUPABASE_SERVICE_KEY='<ENTER YOUR SUPABASE API KEY HERE>'
 ```
 > * You'll need to edit one other file. Go to the `/src/init_data` folder, then edit the `create.sql` file and uncomment the `-- \c users_db` line by removing the two dashes in front.
-> * Afterwards you should be good to go, so run the command `docker-compose up`, and the rest of the setup should be handled automatically.
+> * Afterwards you should be good to go, so run either `docker-compose up` or `docker compose up`, and the rest of the setup should be handled automatically.
 
 ## 🧪 How to Run Tests
 
