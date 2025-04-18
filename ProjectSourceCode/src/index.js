@@ -484,6 +484,8 @@ app.post('/collections/description/:id', auth, async (req, res) => {
 // ────────────────────────────────────────────────
 app.get('/api/notifications', auth, async (req, res) => {
   const userId = req.session.user.id;
+  const captionLength = 20; // Adjust this as needed
+
   try {
     const likes = await db.any(`
       SELECT l.post_id, s.username AS from_user, p.caption AS post_caption
@@ -504,14 +506,27 @@ app.get('/api/notifications', auth, async (req, res) => {
       LIMIT 5;
     `, [userId]);
     const notifications = [];
-    likes.forEach(l => notifications.push({
-      message: `${l.from_user} liked your post "${l.post_caption}"`,
-      postId : l.post_id
-    }));
-    comments.forEach(c => notifications.push({
-      message: `${c.from_user} commented on your post "${c.post_caption}": "${c.comment_text}"`,
-      postId : c.post_id
-    }));
+    likes.forEach(l => {
+      const truncatedCaption = l.post_caption.length > captionLength ?
+        `${l.post_caption.substring(0, captionLength)}...` :
+        l.post_caption;
+      notifications.push({
+        message: `${l.from_user} liked your post "${truncatedCaption}"`,
+        postId : l.post_id
+      });
+    });
+    comments.forEach(c => {
+      const truncatedCaption = c.post_caption.length > captionLength ?
+        `${c.post_caption.substring(0, captionLength)}...` :
+        c.post_caption;
+      const truncatedComment = c.comment_text.length > captionLength ?
+        `${c.comment_text.substring(0, captionLength)}...` :
+        c.comment_text;
+      notifications.push({
+        message: `${c.from_user} commented on your post "${truncatedCaption}": "${truncatedComment}"`,
+        postId : c.post_id
+      });
+    });
     res.json({ notifications });
   } catch (err) {
     console.error('Notification fetch error:', err);
