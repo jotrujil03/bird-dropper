@@ -36,8 +36,8 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 ## 🚀 Instructions on How to Run the App Locally
 
 >
-> * First off you'll need to clone the repo:
-> ```git clone https://github.com/jotrujil03/bird-dropper.git```
+> * First off you'll need to clone the repo, which can be done by running the following in a terminal window:
+> ```git clone https://github.com/jotrujil03/bird-dropper.git -b dev```
 > * Then go to the newly created `bird-dropper` folder, then into the sub-directory `ProjectSourceCode` (or just run this command):
 > ```cd bird-dopper/ProjectSourceCode```
 > * Next you'll need to create an `.env` file:
