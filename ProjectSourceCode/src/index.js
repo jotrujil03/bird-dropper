@@ -607,6 +607,38 @@ app.get('/browse', async (req, res) => {
 });
 
 
+app.get('/fact-of-the-day', (req, res) => {
+  const birdFacts = [
+    "Hummingbirds can fly backwards.",
+    "Owls can rotate their necks about 270 degrees.",
+    "Peregrine Falcons dive at speeds over 240 mph.",
+    "Penguins have knees, although they're hidden inside their bodies.",
+    "The Ostrich is the largest bird in the world.",
+    "Woodpeckers can peck 20 times per second.",
+    "Flamingos get their color from the food they eat.",
+    "Parrots can learn hundreds of words.",
+    "Some ducks sleep with one eye open.",
+    "Crows are known to recognize human faces.",
+    "Albatrosses can fly thousands of miles without stopping.",
+    "The chicken is the closest living relative to the Tyrannosaurus Rex.",
+    "Some birds migrate tens of thousands of miles each year.",
+    "The Kiwi bird lays eggs nearly as big as its own body.",
+    "Bald Eagles build some of the largest nests in the world.",
+    "Swifts can sleep while flying.",
+    "The Emu is Australia's largest bird and second largest bird in the world.",
+    "The Northern Cardinal can live up to 15 years in the wild.",
+    "Geese mate for life and mourn the loss of their partners.",
+    "The smallest bird egg belongs to the hummingbird."
+  ];
+
+  // Pick a fact based on today's date
+  const date = new Date();
+  const todayIndex = date.getDate() % birdFacts.length;
+  const factOfTheDay = birdFacts[todayIndex];
+
+  res.render('pages/factOfTheDay', { fact: factOfTheDay });
+});
+
 
 
 
