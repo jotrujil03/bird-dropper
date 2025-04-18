@@ -391,7 +391,7 @@ app.get('/collections/:userId', auth, async (req, res) => {
       'SELECT student_id, username FROM students WHERE student_id = $1',
       [userId]
     );
-    if (!owner) return res.status(404).send('User not found');
+    if (!owner) return res.status(404).json({ error: 'User not found' });
 
     const photos = await db.any(
       `SELECT collection_id, image_url, description, created_at
