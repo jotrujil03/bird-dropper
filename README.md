@@ -17,41 +17,36 @@ The Bird Dropper isn't just a tracker; it's a thriving environment for bird love
 
 ## 🤝 Contributors
 
-> Add the names and (optionally) links to the GitHub profiles of the contributors to this project here.
+> Aaron Benighaus, Ben Blair, Luke Maschoff, Jonathan Roe, Joshua Trujillo
 
 ## 🛠️ Technology Stack
 
 >
 > * **Frontend:** JavaScript, HTML, CSS
-> * **Backend:** Node.js, Express.js, Python
+> * **Backend:** Node.js
 > * **Database:** PostgreSQL
 > * **Cloud Platform:** Render
 
 ## ⚙️ Prerequisites to Run the App
 
 >
-> * Node.js and npm (or yarn)
-> * Python 3.x
+> * Node.js and npm
 > * A specific database system (and instructions on how to set it up)
 > * Any required API keys or environment variables
 
 ## 🚀 Instructions on How to Run the App
 
-> Provide clear, step-by-step instructions on how to get the application running on a local machine. For example:
-
-> **Database Setup (if applicable):**
->
-> > Include instructions on how to create the database, run migrations, etc.
+> First off: ```git clone https://github.com/jotrujil03/bird-dropper.git```
 
 ## 🧪 How to Run Tests
 
-> Explain how to execute the application's tests. Be specific about the testing framework used and any relevant commands. For example:
+> The tests are run automatically after local deploy.
 
 
 ## 🔗 Link to the Deployed Application
 
 >
-> [Your Deployed Application Link Goes Here](https://bird-dropper-web.onrender.com/)
+> [Try The Bird Dropper Here!:](https://bird-dropper-web.onrender.com/)
 
 ---
 
