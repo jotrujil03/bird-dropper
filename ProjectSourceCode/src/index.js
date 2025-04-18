@@ -370,6 +370,107 @@ app.get('/social', auth, async (req, res) => {
     res.render('pages/social', { title: 'Social', posts: [], error: 'Could not load posts' });
   }
 });
+// ────────────────────────────────────────────────
+//                 COLLECTIONS
+// ────────────────────────────────────────────────
+app.get('/collections', auth, async (req, res) => {
+  try {
+    const rows = await db.any(
+      `SELECT
+         collection_id,
+         image_url,
+         description,
+         created_at
+       FROM collections
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+      [req.session.user.id]
+    );
+    res.render('pages/collections', {
+      title : `${req.session.user.username}'s Collection`,
+      photos: rows
+    });
+  } catch (err) {
+    console.error('Collections fetch error:', err);
+    res.render('pages/collections', {
+      title : `${req.session.user.username}'s Collection`,
+      photos: [],
+      error : 'Failed to load collections.'
+    });
+  }
+});
+
+
+app.post('/collections/upload', auth, upload.array('collectionImages', 10), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, error: 'No files uploaded.' });
+    }
+    try {
+      const added = [];
+      for (const file of req.files) {
+        const safeName = file.originalname
+          .normalize('NFKD')
+          .replace(/[^\w.\-]+/g, '-')
+          .replace(/-+/g, '-');
+        const pathInBucket = `collections/${req.session.user.id}/${Date.now()}-${safeName}`;
+
+        const { error: upErr } = await supabase
+          .storage
+          .from(BUCKET)
+          .upload(pathInBucket, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false
+          });
+        if (upErr) {
+          console.error('Supabase upload error:', upErr);
+          return res.status(500).json({ success: false, error: 'Upload failed.' });
+        }
+
+        const { data: urlData, error: urlErr } = supabase
+          .storage
+          .from(BUCKET)
+          .getPublicUrl(pathInBucket);
+        if (urlErr) {
+          console.error('Supabase getPublicUrl error:', urlErr);
+          return res.status(500).json({ success: false, error: 'Could not get public URL.' });
+        }
+        const row = await db.one(
+          `INSERT INTO collections (user_id, image_url, created_at)
+           VALUES ($1, $2, NOW())
+           RETURNING collection_id, image_url, description, created_at`,
+          [req.session.user.id, urlData.publicUrl]
+        );
+
+        added.push(row);
+      }
+      res.json({ success: true, photos: added });
+    } catch (e) {
+      console.error('Collection upload exception:', e);
+      res.status(500).json({ success: false, error: 'Failed to upload collection images.' });
+    }
+  }
+);
+
+app.post('/collections/description/:id', auth, async (req, res) => {
+  const colId = req.params.id;
+  const { description } = req.body;
+
+  try {
+    const result = await db.result(
+      'UPDATE collections SET description = $1 WHERE collection_id = $2 AND user_id = $3',
+      [description, colId, req.session.user.id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Photo not found.' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Description save error:', err);
+    return res.status(500).json({ success: false, error: 'Could not save description.' });
+  }
+});
 
 // ────────────────────────────────────────────────
 //          NOTIFICATIONS API  (likes/comments)
