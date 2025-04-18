@@ -575,21 +575,32 @@ app.get('/', async (req, res) => {
 
 app.get('/profile', auth, async (req, res) => {
   try {
-    const s = await db.one('SELECT * FROM students WHERE student_id=$1', [req.session.user.id]);
-    req.session.user.bio = s.bio;
+    // Get user data
+    const user = await db.one('SELECT * FROM students WHERE student_id=$1', [req.session.user.id]);
+    
+    // Get user's posts with like counts
+    const userPosts = await db.any(`
+      SELECT p.*, 
+        (SELECT COUNT(*) FROM likes WHERE post_id = p.post_id) AS like_count
+      FROM posts p
+      WHERE p.user_id = $1
+      ORDER BY p.created_at DESC
+    `, [req.session.user.id]);
+
     res.render('pages/profile', {
-      title       : 'Your Profile',
-      user        : s,
-      profileImage: s.profile_photo || '/images/cardinal-bird-branch.jpg',
-      bio         : s.bio
+      title: 'Your Profile',
+      user: user,
+      profileImage: user.profile_photo || '/images/cardinal-bird-branch.jpg',
+      bio: user.bio,
+      userPosts: userPosts,  // Pass posts to template
+      hasPosts: userPosts.length > 0  // Helper flag for template
     });
   } catch (e) {
-    console.error(e);
+    console.error('Profile error:', e);
     res.render('pages/profile', {
-      title       : 'Your Profile',
-      user        : req.session.user,
-      profileImage: req.session.user.profileImage || '/images/cardinal-bird-branch.jpg',
-      error       : 'Unable to load profile'
+      title: 'Your Profile',
+      user: req.session.user,
+      error: 'Unable to load profile'
     });
   }
 });
