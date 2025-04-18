@@ -43,16 +43,30 @@
               {{/if}}
             </ul>
           </div>
-
           <div class="dropdown">
-            <a class="text-reset dropdown-toggle d-flex align-items-center hidden-arrow" href="#" id="userDropdown" role="button" data-mdb-dropdown-init aria-expanded="false">
+            <a class="text-reset dropdown-toggle d-flex align-items-center hidden-arrow"
+              href="#" id="userDropdown" role="button"
+              data-mdb-dropdown-init aria-expanded="false">
               {{#if user.profileImage}}
-                <img src="{{user.profileImage}}" class="rounded-circle shadow-sm" title="User" style="width: 40px; height: 40px; object-fit: cover;">
+                <img src="{{user.profileImage}}"
+                    class="rounded-circle shadow-sm"
+                    title="User"
+                    style="width: 40px; height: 40px; object-fit: cover;">
               {{else}}
-                <i class="fas fa-user rounded-circle" title="User" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+                <i class="fas fa-user rounded-circle"
+                  title="User"
+                  style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;">
+                </i>
               {{/if}}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              {{#if user}}
+                <li>
+                  <a class="dropdown-item" href="/collections">
+                    Collections
+                  </a>
+                </li>
+              {{/if}}
               <li><a class="dropdown-item" href="/profile">My profile</a></li>
               <li><a class="dropdown-item" href="/settings">Settings</a></li>
               {{#if user}}
