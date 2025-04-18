@@ -184,7 +184,6 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const u = await db.oneOrNone('SELECT * FROM students WHERE email=$1', [email]);
-    console.log('User found:', u); // Add this line
     if (!u || !(await bcrypt.compare(password, u.password))) {
       console.log('Login failed - invalid credentials');
       return res.render('pages/login', { title: 'Login', error: 'Invalid email or password', formData: { email } });
