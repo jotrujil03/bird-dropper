@@ -792,7 +792,8 @@ app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, 
     const minOverallConfidence = 0.6;
     const minSpecificConfidence = 0.8;
     const minTypeConfidence = 0.7;
-
+    
+    
     const termsToIgnore = [
         'Animal', 'Organism', 'Fauna', 'Vertebrate', 'Wildlife',
         'Beak', 'Wing', 'Feather', 'Bill',
@@ -800,7 +801,7 @@ app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, 
         'Photography', 'Adaptation', 'Illustrative technique', 'Art', 'Painting',
         'Terrestrial animal', 'Avian'
     ];
-
+    
     const commonBirdTypes = [
         'Duck', 'Owl', 'Hawk', 'Eagle', 'Sparrow', 'Finch', 'Robin',
         'Cardinal', 'Jay', 'Falcon', 'Goose', 'Heron', 'Vulture', 'Toucan',
@@ -808,89 +809,91 @@ app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, 
         'Crow', 'Raven', 'Seagull', 'Pelican', 'Kingfisher', 'Woodpecker',
         'Crane', 'Swan', 'Flamingo', 'Parrot', 'Toucan', 'Penguin', 'Ostrich', 'Emu'
     ];
-
-
-    try {
-        const [result] = await visionClient.labelDetection(file.buffer);
-        const labels = result.labelAnnotations;
-
-        if (!labels || labels.length === 0) {
-             setTimeout(() => {
-                 res.redirect('/?error=No+details+detected+in+the+image');
-             }, 0);
-             return;
+    
+    
+    app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, res) => {
+        const file = req.file;
+    
+        if (!file) {
+            setTimeout(() => {
+                 res.redirect('/?error=No+image+uploaded');
+            }, 0);
+            return;
         }
-
-        console.log('Vision API Labels:', labels.map(l => `${l.description} (${l.score.toFixed(2)})`).join(', '));
-
-        labels.sort((a, b) => b.score - a.score);
-
-        let bestCandidate = { description: '', score: -1, priority: -1 };
-
-        const labelsToProcess = labels.slice(0, 30);
-
-        for (const label of labelsToProcess) {
-            const description = label.description;
-            const score = label.score;
-            let currentPriority = 0;
-
-            if (score < minOverallConfidence) {
-                 if (label !== labelsToProcess[0]) break;
-                 else continue;
+    
+        let birdName = '';
+    
+        try {
+            const [result] = await visionClient.labelDetection(file.buffer);
+            const labels = result.labelAnnotations;
+    
+            if (!labels || labels.length === 0) {
+                 setTimeout(() => {
+                     res.redirect('/?error=No+details+detected+in+the+image');
+                 }, 0);
+                 return;
             }
-
-            if (termsToIgnore.includes(description)) {
-                 continue;
-            }
-
-            const isMultiWord = description.split(' ').length > 1;
-            const isCommonBirdType = commonBirdTypes.includes(description);
-
-            if (isMultiWord && score >= minSpecificConfidence) {
-                currentPriority = 3;
-            } else if (isCommonBirdType && score >= minTypeConfidence) {
-                currentPriority = 2;
-            } else if (description === 'Bird' && score >= minOverallConfidence) {
-                currentPriority = 1;
-            }
-
-            if (currentPriority > 0) {
-                if (currentPriority > bestCandidate.priority) {
-                    bestCandidate = { description, score, priority: currentPriority };
-                    console.log(`New Best Candidate (Higher Priority ${currentPriority}): ${description} (${score.toFixed(2)})`);
-                } else if (currentPriority === bestCandidate.priority) {
-                    if (score > bestCandidate.score) {
-                         bestCandidate = { description, score, priority: currentPriority };
-                         console.log(`New Best Candidate (Same Priority ${currentPriority}, Higher Score): ${description} (${score.toFixed(2)})`);
+    
+            labels.sort((a, b) => b.score - a.score);
+    
+            let bestCandidate = { description: '', score: -1, priority: -1 };
+    
+            const labelsToProcess = labels.slice(0, 30);
+    
+            for (const label of labelsToProcess) {
+                const description = label.description;
+                const score = label.score;
+                let currentPriority = 0;
+    
+                if (score < minOverallConfidence) {
+                     continue;
+                }
+    
+                if (termsToIgnore.includes(description)) {
+                     continue;
+                }
+    
+                const isMultiWord = description.split(' ').length > 1;
+                const isCommonBirdType = commonBirdTypes.includes(description);
+    
+                if (isMultiWord && score >= minSpecificConfidence) {
+                    currentPriority = 3;
+                } else if (isCommonBirdType && score >= minTypeConfidence) {
+                    currentPriority = 2;
+                } else if (description === 'Bird' && score >= minOverallConfidence) {
+                    currentPriority = 1;
+                }
+    
+                if (currentPriority > 0) {
+                    if (currentPriority > bestCandidate.priority) {
+                        bestCandidate = { description, score, priority: currentPriority };
+                    } else if (currentPriority === bestCandidate.priority) {
+                        if (score > bestCandidate.score) {
+                             bestCandidate = { description, score, priority: currentPriority };
+                        }
                     }
                 }
             }
+    
+            if (bestCandidate.priority >= 2) {
+                birdName = bestCandidate.description;
+                setTimeout(() => {
+                    const searchQuery = encodeURIComponent(birdName);
+                    res.redirect(`/search?query=${searchQuery}`);
+                }, 0);
+    
+            } else {
+                const errorMessage = encodeURIComponent("We weren't able to identify a specific bird. Please try uploading a clearer photo.");
+                setTimeout(() => {
+                     res.redirect(`/?error=${errorMessage}`);
+                }, 0);
+            }
+    
+        } catch (error) {
+            setTimeout(() => {
+                res.redirect('/?error=Image+analysis+failed');
+            }, 0);
         }
-
-        if (bestCandidate.priority > 0) {
-            birdName = bestCandidate.description;
-            console.log(`Final identified bird name: ${birdName} (Score: ${bestCandidate.score.toFixed(2)}, Priority: ${bestCandidate.priority})`);
-        } else {
-            console.log('No suitable bird name found among labels with sufficient confidence or specificity.');
-             setTimeout(() => {
-                 res.redirect('/?error=Could+not+identify+a+bird+in+the+image');
-             }, 0);
-             return;
-        }
-
-    } catch (error) {
-        console.error('Error calling Google Vision API:', error);
-        setTimeout(() => {
-            res.redirect('/?error=Image+analysis+failed');
-        }, 0);
-        return;
-    }
-
-    setTimeout(() => {
-        const searchQuery = encodeURIComponent(birdName);
-        res.redirect(`/search?query=${searchQuery}`);
-    }, 0);
-
 });
 
 // ────────────────────────────────────────────────
