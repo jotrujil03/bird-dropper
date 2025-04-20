@@ -788,6 +788,7 @@ app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, 
     }
 
     let birdName = '';
+
     const minOverallConfidence = 0.6;
     const minSpecificConfidence = 0.8;
     const minTypeConfidence = 0.7;
@@ -797,14 +798,15 @@ app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, 
         'Beak', 'Wing', 'Feather', 'Bill',
         'Nature', 'Outdoor', 'Sky', 'Tree', 'Plant', 'Branch', 'Leaf', 'Ground', 'Water', 'Habitat', 'Environment',
         'Photography', 'Adaptation', 'Illustrative technique', 'Art', 'Painting',
-        'Terrestrial animal'
+        'Terrestrial animal', 'Avian'
     ];
 
     const commonBirdTypes = [
-        'Bird', 'Duck', 'Owl', 'Hawk', 'Eagle', 'Sparrow', 'Finch', 'Robin',
+        'Duck', 'Owl', 'Hawk', 'Eagle', 'Sparrow', 'Finch', 'Robin',
         'Cardinal', 'Jay', 'Falcon', 'Goose', 'Heron', 'Vulture', 'Toucan',
         'Macaw', 'Condor', 'Hummingbird', 'Stork', 'Rhea', 'Pigeon', 'Dove',
-        'Crow', 'Raven', 'Seagull', 'Pelican', 'Kingfisher', 'Woodpecker'
+        'Crow', 'Raven', 'Seagull', 'Pelican', 'Kingfisher', 'Woodpecker',
+        'Crane', 'Swan', 'Flamingo', 'Parrot', 'Toucan', 'Penguin', 'Ostrich', 'Emu'
     ];
 
 
@@ -813,78 +815,82 @@ app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, 
         const labels = result.labelAnnotations;
 
         if (!labels || labels.length === 0) {
-             console.log('No labels detected in image.');
-             return res.redirect('/?error=No+details+detected+in+the+image');
+             setTimeout(() => {
+                 res.redirect('/?error=No+details+detected+in+the+image');
+             }, 0);
+             return;
         }
 
         console.log('Vision API Labels:', labels.map(l => `${l.description} (${l.score.toFixed(2)})`).join(', '));
 
         labels.sort((a, b) => b.score - a.score);
 
-        let bestMatch = null;
-        let bestMatchScore = 0;
+        let bestCandidate = { description: '', score: -1, priority: -1 };
 
-        const topLabels = labels.slice(0, 20);
+        const labelsToProcess = labels.slice(0, 30);
 
-        for (const label of topLabels) {
+        for (const label of labelsToProcess) {
             const description = label.description;
             const score = label.score;
+            let currentPriority = 0;
 
             if (score < minOverallConfidence) {
-                break;
+                 if (label !== labelsToProcess[0]) break;
+                 else continue;
             }
 
             if (termsToIgnore.includes(description)) {
-                continue;
+                 continue;
             }
 
             const isMultiWord = description.split(' ').length > 1;
             const isCommonBirdType = commonBirdTypes.includes(description);
 
             if (isMultiWord && score >= minSpecificConfidence) {
-                bestMatch = description;
-                bestMatchScore = score;
-                console.log(`Found high-confidence multi-word candidate: ${description} (${score.toFixed(2)})`);
-                break;
+                currentPriority = 3;
+            } else if (isCommonBirdType && score >= minTypeConfidence) {
+                currentPriority = 2;
+            } else if (description === 'Bird' && score >= minOverallConfidence) {
+                currentPriority = 1;
             }
 
-            if (!bestMatch && isCommonBirdType && score >= minTypeConfidence) {
-                 if (!bestMatch) {
-                     bestMatch = description;
-                     bestMatchScore = score;
-                     console.log(`Found high-confidence single-word type candidate: ${description} (${score.toFixed(2)})`);
-                 }
-            }
-
-            if (!bestMatch && description === 'Bird' && score >= minOverallConfidence) {
-                if (!bestMatch) {
-                    bestMatch = description;
-                    bestMatchScore = score;
-                     console.log(`Found generic "Bird" candidate: ${description} (${score.toFixed(2)})`);
+            if (currentPriority > 0) {
+                if (currentPriority > bestCandidate.priority) {
+                    bestCandidate = { description, score, priority: currentPriority };
+                    console.log(`New Best Candidate (Higher Priority ${currentPriority}): ${description} (${score.toFixed(2)})`);
+                } else if (currentPriority === bestCandidate.priority) {
+                    if (score > bestCandidate.score) {
+                         bestCandidate = { description, score, priority: currentPriority };
+                         console.log(`New Best Candidate (Same Priority ${currentPriority}, Higher Score): ${description} (${score.toFixed(2)})`);
+                    }
                 }
             }
         }
 
-        if (bestMatch) {
-            birdName = bestMatch;
-            console.log(`Final identified bird name: ${birdName}`);
+        if (bestCandidate.priority > 0) {
+            birdName = bestCandidate.description;
+            console.log(`Final identified bird name: ${birdName} (Score: ${bestCandidate.score.toFixed(2)}, Priority: ${bestCandidate.priority})`);
         } else {
-            console.log('No suitable bird name found among top labels with sufficient confidence or specificity.');
-            return res.redirect('/?error=Could+not+identify+a+bird+in+the+image');
+            console.log('No suitable bird name found among labels with sufficient confidence or specificity.');
+             setTimeout(() => {
+                 res.redirect('/?error=Could+not+identify+a+bird+in+the+image');
+             }, 0);
+             return;
         }
 
     } catch (error) {
         console.error('Error calling Google Vision API:', error);
-        return res.redirect('/?error=Image+analysis+failed');
+        setTimeout(() => {
+            res.redirect('/?error=Image+analysis+failed');
+        }, 0);
+        return;
     }
 
-    if (birdName) {
+    setTimeout(() => {
         const searchQuery = encodeURIComponent(birdName);
         res.redirect(`/search?query=${searchQuery}`);
-    } else {
-         console.error('Logic error: birdName should have been set or redirected by now.');
-         res.redirect('/?error=An+unexpected+error+occurred');
-    }
+    }, 0);
+
 });
 
 // ────────────────────────────────────────────────
