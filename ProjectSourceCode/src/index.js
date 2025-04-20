@@ -788,47 +788,89 @@ app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, 
     }
 
     let birdName = '';
-    const minConfidence = 0.8;
+    const minOverallConfidence = 0.6;
+    const minSpecificConfidence = 0.8;
+    const minTypeConfidence = 0.7;
+
+    const termsToIgnore = [
+        'Animal', 'Organism', 'Fauna', 'Vertebrate', 'Wildlife',
+        'Beak', 'Wing', 'Feather', 'Bill',
+        'Nature', 'Outdoor', 'Sky', 'Tree', 'Plant', 'Branch', 'Leaf', 'Ground', 'Water', 'Habitat', 'Environment',
+        'Photography', 'Adaptation', 'Illustrative technique', 'Art', 'Painting',
+        'Terrestrial animal'
+    ];
+
+    const commonBirdTypes = [
+        'Bird', 'Duck', 'Owl', 'Hawk', 'Eagle', 'Sparrow', 'Finch', 'Robin',
+        'Cardinal', 'Jay', 'Falcon', 'Goose', 'Heron', 'Vulture', 'Toucan',
+        'Macaw', 'Condor', 'Hummingbird', 'Stork', 'Rhea', 'Pigeon', 'Dove',
+        'Crow', 'Raven', 'Seagull', 'Pelican', 'Kingfisher', 'Woodpecker'
+    ];
+
 
     try {
         const [result] = await visionClient.labelDetection(file.buffer);
         const labels = result.labelAnnotations;
 
-        if (labels && labels.length > 0) {
-            console.log('Vision API Labels:', labels.map(l => `${l.description} (${l.score.toFixed(2)})`).join(', '));
+        if (!labels || labels.length === 0) {
+             console.log('No labels detected in image.');
+             return res.redirect('/?error=No+details+detected+in+the+image');
+        }
 
+        console.log('Vision API Labels:', labels.map(l => `${l.description} (${l.score.toFixed(2)})`).join(', '));
 
-            // Sort labels by confidence descending
-            labels.sort((a, b) => b.score - a.score);
+        labels.sort((a, b) => b.score - a.score);
 
-            const genericLabels = ['Bird', 'Animal', 'Organism', 'Fauna', 'Beak', 'Wing', 'Feather'];
+        let bestMatch = null;
+        let bestMatchScore = 0;
 
-            const specificBirdLabel = labels.find(label =>
-                label.score >= minConfidence &&
-                !genericLabels.includes(label.description) &&
-                // Optional: Add more checks, e.g., if the label is multi-word (potential species name)
-                label.description.split(' ').length > 1
-            );
+        const topLabels = labels.slice(0, 20);
 
-            if (specificBirdLabel) {
-                 birdName = specificBirdLabel.description;
-                 console.log(`Identified specific bird: ${birdName}`);
-            } else {
-                const genericBirdLabel = labels.find(label =>
-                    label.description === 'Bird' && label.score >= minConfidence * 0.9 // Slightly lower confidence threshold for generic "Bird"
-                );
-                 if (genericBirdLabel) {
-                    birdName = genericBirdLabel.description; // Use "Bird" as the query
-                    console.log(`Identified generic bird: ${birdName}`);
-                 } else {
-                    console.log('Could not identify a specific or generic bird label with sufficient confidence.');
-                    return res.redirect('/?error=Could+not+identify+a+bird+in+the+image');
+        for (const label of topLabels) {
+            const description = label.description;
+            const score = label.score;
+
+            if (score < minOverallConfidence) {
+                break;
+            }
+
+            if (termsToIgnore.includes(description)) {
+                continue;
+            }
+
+            const isMultiWord = description.split(' ').length > 1;
+            const isCommonBirdType = commonBirdTypes.includes(description);
+
+            if (isMultiWord && score >= minSpecificConfidence) {
+                bestMatch = description;
+                bestMatchScore = score;
+                console.log(`Found high-confidence multi-word candidate: ${description} (${score.toFixed(2)})`);
+                break;
+            }
+
+            if (!bestMatch && isCommonBirdType && score >= minTypeConfidence) {
+                 if (!bestMatch) {
+                     bestMatch = description;
+                     bestMatchScore = score;
+                     console.log(`Found high-confidence single-word type candidate: ${description} (${score.toFixed(2)})`);
                  }
             }
 
+            if (!bestMatch && description === 'Bird' && score >= minOverallConfidence) {
+                if (!bestMatch) {
+                    bestMatch = description;
+                    bestMatchScore = score;
+                     console.log(`Found generic "Bird" candidate: ${description} (${score.toFixed(2)})`);
+                }
+            }
+        }
+
+        if (bestMatch) {
+            birdName = bestMatch;
+            console.log(`Final identified bird name: ${birdName}`);
         } else {
-            console.log('No labels detected in image.');
-            return res.redirect('/?error=No+details+detected+in+the+image');
+            console.log('No suitable bird name found among top labels with sufficient confidence or specificity.');
+            return res.redirect('/?error=Could+not+identify+a+bird+in+the+image');
         }
 
     } catch (error) {
@@ -840,7 +882,8 @@ app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, 
         const searchQuery = encodeURIComponent(birdName);
         res.redirect(`/search?query=${searchQuery}`);
     } else {
-         res.redirect('/?error=Could+not+determine+bird+name');
+         console.error('Logic error: birdName should have been set or redirected by now.');
+         res.redirect('/?error=An+unexpected+error+occurred');
     }
 });
 
