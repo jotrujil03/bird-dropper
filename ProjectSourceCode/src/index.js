@@ -30,6 +30,8 @@ const bcrypt        = require('bcryptjs');
 const multer        = require('multer');
 const axios         = require('axios');
 const { createClient } = require('@supabase/supabase-js');
+const { ImageAnnotatorClient } = require('@google-cloud/vision');
+const visionClient = new ImageAnnotatorClient();
 
 // ──────────────────  SUPABASE  ──────────────────
 const supabase = createClient(
