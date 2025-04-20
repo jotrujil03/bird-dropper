@@ -776,6 +776,73 @@ app.post('/update-profile-image', auth, upload.single('profileImage'), async (re
 });
 
 // ────────────────────────────────────────────────
+//         IMAGE IDENTIFICATION ROUTE
+// ────────────────────────────────────────────────
+app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, res) => {
+    const file = req.file;
+
+    if (!file) {
+        return res.redirect('/?error=No+image+uploaded');
+    }
+
+    let birdName = '';
+    const minConfidence = 0.8;
+
+    try {
+        const [result] = await visionClient.labelDetection(file.buffer);
+        const labels = result.labelAnnotations;
+
+        if (labels && labels.length > 0) {
+            console.log('Vision API Labels:', labels.map(l => `${l.description} (${l.score.toFixed(2)})`).join(', '));
+
+
+            // Sort labels by confidence descending
+            labels.sort((a, b) => b.score - a.score);
+
+            const genericLabels = ['Bird', 'Animal', 'Organism', 'Fauna', 'Beak', 'Wing', 'Feather'];
+
+            const specificBirdLabel = labels.find(label =>
+                label.score >= minConfidence &&
+                !genericLabels.includes(label.description) &&
+                // Optional: Add more checks, e.g., if the label is multi-word (potential species name)
+                label.description.split(' ').length > 1
+            );
+
+            if (specificBirdLabel) {
+                 birdName = specificBirdLabel.description;
+                 console.log(`Identified specific bird: ${birdName}`);
+            } else {
+                const genericBirdLabel = labels.find(label =>
+                    label.description === 'Bird' && label.score >= minConfidence * 0.9 // Slightly lower confidence threshold for generic "Bird"
+                );
+                 if (genericBirdLabel) {
+                    birdName = genericBirdLabel.description; // Use "Bird" as the query
+                    console.log(`Identified generic bird: ${birdName}`);
+                 } else {
+                    console.log('Could not identify a specific or generic bird label with sufficient confidence.');
+                    return res.redirect('/?error=Could+not+identify+a+bird+in+the+image');
+                 }
+            }
+
+        } else {
+            console.log('No labels detected in image.');
+            return res.redirect('/?error=No+details+detected+in+the+image');
+        }
+
+    } catch (error) {
+        console.error('Error calling Google Vision API:', error);
+        return res.redirect('/?error=Image+analysis+failed');
+    }
+
+    if (birdName) {
+        const searchQuery = encodeURIComponent(birdName);
+        res.redirect(`/search?query=${searchQuery}`);
+    } else {
+         res.redirect('/?error=Could+not+determine+bird+name');
+    }
+});
+
+// ────────────────────────────────────────────────
 //                     SERVER
 // ────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
