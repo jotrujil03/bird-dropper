@@ -226,13 +226,13 @@ app.post('/post', auth, upload.single('photo'), async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).send('No image uploaded.');
 
- /* replace unsafe chars with dashes and collapse repeats */
-const safeName = file.originalname
-.normalize('NFKD')                 // remove weird unicode
-.replace(/[^\w.\-]+/g, '-')        // keep letters, numbers, _, -, .
-.replace(/-+/g, '-');              // no double dashes
+  /* replace unsafe chars with dashes and collapse repeats */
+  const safeName = file.originalname
+    .normalize('NFKD')                 // remove weird unicode
+    .replace(/[^\w.\-]+/g, '-')        // keep letters, numbers, _, -, .
+    .replace(/-+/g, '-');              // no double dashes
 
-const fileName = `posts/${Date.now()}-${safeName}`;
+  const fileName = `posts/${Date.now()}-${safeName}`;
 
   const { error: upErr } = await supabase
     .storage.from(BUCKET)
@@ -334,7 +334,7 @@ app.post('/delete-comment/:id', auth, async (req, res) => {
   } catch (e) {
     console.error(e);
     const msg = 'Failed';
-    req.accepts('json')
+    return req.accepts('json')
       ? res.status(500).json({ success: false, error: msg })
       : res.status(500).send(msg);
   }
@@ -342,24 +342,52 @@ app.post('/delete-comment/:id', auth, async (req, res) => {
 
 // ---------- SOCIAL FEED ----------
 app.get('/social', auth, async (req, res) => {
+  const userId = req.session.user.id;
+  const filter = req.query.filter === 'following' ? 'following' : 'all';
+
   try {
-    const posts = await db.any(`
-      SELECT p.*, s.username, s.profile_photo AS avatar, p.user_id,
-             (SELECT COUNT(*) FROM likes WHERE post_id=p.post_id) AS like_count,
-             (SELECT COALESCE(json_agg(json_build_object(
-                 'comment_id',c.comment_id,
-                 'comment'   ,c.comment,
-                 'username'  ,s2.username,
-                 'avatar'    ,s2.profile_photo
-             )),'[]'::json)
-              FROM comments c
-              JOIN students s2 ON c.user_id=s2.student_id
-              WHERE c.post_id=p.post_id) AS comments
-      FROM posts p
-      JOIN students s ON p.user_id=s.student_id
-      ORDER BY p.created_at DESC
-    `);
-    const formatted = posts.map(p => ({
+    let postsRaw;
+    if (filter === 'following') {
+      // only posts from people I follow
+      postsRaw = await db.any(`
+        SELECT p.*, s.username, s.profile_photo AS avatar, p.user_id,
+               (SELECT COUNT(*) FROM likes WHERE post_id = p.post_id) AS like_count,
+               (SELECT COALESCE(json_agg(json_build_object(
+                 'comment_id', c.comment_id,
+                 'comment'   , c.comment,
+                 'username'  , s2.username,
+                 'avatar'    , s2.profile_photo
+               )), '[]'::json)
+                FROM comments c
+                JOIN students s2 ON c.user_id = s2.student_id
+                WHERE c.post_id = p.post_id) AS comments
+        FROM posts p
+        JOIN follows f      ON f.following_id = p.user_id
+        JOIN students s     ON p.user_id   = s.student_id
+        WHERE f.follower_id = $1
+        ORDER BY p.created_at DESC
+      `, [userId]);
+    } else {
+      // all posts
+      postsRaw = await db.any(`
+        SELECT p.*, s.username, s.profile_photo AS avatar, p.user_id,
+               (SELECT COUNT(*) FROM likes WHERE post_id = p.post_id) AS like_count,
+               (SELECT COALESCE(json_agg(json_build_object(
+                 'comment_id', c.comment_id,
+                 'comment'   , c.comment,
+                 'username'  , s2.username,
+                 'avatar'    , s2.profile_photo
+               )), '[]'::json)
+                FROM comments c
+                JOIN students s2 ON c.user_id = s2.student_id
+                WHERE c.post_id = p.post_id) AS comments
+        FROM posts p
+        JOIN students s ON p.user_id = s.student_id
+        ORDER BY p.created_at DESC
+      `);
+    }
+
+    const posts = postsRaw.map(p => ({
       id        : p.post_id,
       imageUrl  : p.image_url,
       caption   : p.caption,
@@ -373,10 +401,22 @@ app.get('/social', auth, async (req, res) => {
         avatar  : p.avatar || '/images/cardinal-bird-branch.jpg'
       }
     }));
-    res.render('pages/social', { title: 'Social', user: req.session.user, posts: formatted });
+
+    res.render('pages/social', {
+      title:  'Social',
+      user:   req.session.user,
+      posts,
+      filter
+    });
   } catch (e) {
     console.error(e);
-    res.render('pages/social', { title: 'Social', posts: [], error: 'Could not load posts' });
+    res.render('pages/social', {
+      title:  'Social',
+      user:   req.session.user,
+      posts:  [],
+      filter,
+      error:  'Could not load posts'
+    });
   }
 });
 
@@ -388,39 +428,83 @@ app.get('/collections', auth, (req, res) => {
 });
 
 app.get('/collections/:userId', auth, async (req, res) => {
-  const userId = parseInt(req.params.userId, 10);
-  if (isNaN(userId)) {
+  const profileUserId = parseInt(req.params.userId, 10);
+  if (isNaN(profileUserId)) {
     return res.status(400).send('Invalid user ID');
   }
-  const myId   = parseInt(req.session.user.id,   10);
-  const isOwner = myId === userId;
+  const sessionUserId = req.session.user.id;
+  const isOwner = sessionUserId === profileUserId;
+  const sort = req.query.sort === 'liked' ? 'liked' : 'recent';
 
   try {
-    const owner = await db.oneOrNone(
-      'SELECT student_id, username FROM students WHERE student_id = $1',
-      [userId]
-    );
-    if (!owner) return res.status(404).json({ error: 'User not found' });
+    const userViewed = await db.oneOrNone(`
+      SELECT student_id AS id, username, profile_photo AS profileImage, bio
+      FROM students
+      WHERE student_id = $1
+    `, [profileUserId]);
+    if (!userViewed) {
+      return res.status(404).render('pages/404');
+    }
 
-    const photos = await db.any(
-      `SELECT collection_id, image_url, description, created_at
-         FROM collections
-        WHERE user_id = $1
-     ORDER BY created_at DESC`,
-      [userId]
-    );
+    let isFollowing = false;
+    if (!isOwner) {
+      const followRow = await db.oneOrNone(`
+        SELECT 1
+        FROM follows
+        WHERE follower_id = $1 AND following_id = $2
+      `, [sessionUserId, profileUserId]);
+      isFollowing = !!followRow;
+    }
 
-    return res.render('pages/collections', {
-      user:           owner,
-      photos,
-      isOwner,               
-      sessionUserId:  myId   
+    let photos = await db.any(`
+      SELECT collection_id, image_url, description, created_at
+      FROM collections
+      WHERE user_id = $1
+    `, [profileUserId]);
+
+    const ids = photos.map(p => p.collection_id);
+    if (ids.length) {
+      const likesRows = await db.any(`
+        SELECT collection_id, COUNT(*)::int AS like_count
+        FROM collection_likes
+        WHERE collection_id = ANY($1::int[])
+        GROUP BY collection_id
+      `, [ids]);
+      const userLikeRows = await db.any(`
+        SELECT collection_id
+        FROM collection_likes
+        WHERE user_id = $1 AND collection_id = ANY($2::int[])
+      `, [sessionUserId, ids]);
+      const likeCountMap = new Map(likesRows.map(r => [r.collection_id, r.like_count]));
+      const likedSet = new Set(userLikeRows.map(r => r.collection_id));
+      photos = photos.map(p => ({
+        ...p,
+        likeCount: likeCountMap.get(p.collection_id) || 0,
+        isLiked: likedSet.has(p.collection_id)
+      }));
+    }
+
+    if (sort === 'liked') {
+      photos.sort((a, b) => b.likeCount - a.likeCount);
+    } else {
+      photos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    res.render('pages/collections', {
+      user: req.session.user,
+      userViewed,
+      isOwner,
+      isFollowing,
+      sort,
+      photos
     });
   } catch (err) {
-    console.error('Error loading collection:', err);
-    return res.status(500).send('Error loading collection');
+    console.error(err);
+    res.status(500).send('Error loading collection');
   }
 });
+
+
 
 app.post(
   '/collections/upload',
@@ -479,6 +563,30 @@ app.post(
     }
   }
 );
+app.post('/collections/delete/:id', auth, async (req, res) => {
+  const colId        = parseInt(req.params.id, 10);
+  const sessionUserId = req.session.user.id;
+
+  try {
+    const row = await db.oneOrNone(
+      'SELECT image_url FROM collections WHERE collection_id = $1 AND user_id = $2',
+      [colId, sessionUserId]
+    );
+    if (!row) {
+      return res.status(403).send('Unauthorized to delete this item.');
+    }
+    const key = storageKeyFromUrl(row.image_url);
+    if (key) {
+      const { error: delErr } = await supabase.storage.from(BUCKET).remove([key]);
+      if (delErr) console.warn('⚠️  Could not delete image from storage:', delErr.message);
+    }
+    await db.none('DELETE FROM collections WHERE collection_id = $1', [colId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting collection item:', err);
+    res.status(500).json({ success: false, error: 'Failed to delete.' });
+  }
+});
 
 app.post('/collections/description/:id', auth, async (req, res) => {
   const colId       = parseInt(req.params.id, 10);
@@ -500,7 +608,180 @@ app.post('/collections/description/:id', auth, async (req, res) => {
     return res.status(500).json({ success: false, error: 'Could not save description.' });
   }
 });
+// ---------- LIKE / UNLIKE COLLECTION ITEM ----------
+app.post('/like-collection/:id', auth, async (req, res) => {
+  const colId  = parseInt(req.params.id, 10);
+  const userId = req.session.user.id;
+  try {
+    const existing = await db.oneOrNone(
+      `SELECT 1
+         FROM collection_likes
+        WHERE collection_id=$1
+          AND user_id=$2`,
+      [colId, userId]
+    );
 
+    if (existing) {
+      await db.none(
+        `DELETE FROM collection_likes
+          WHERE collection_id=$1
+            AND user_id=$2`,
+        [colId, userId]
+      );
+    } else {
+      await db.none(
+        `INSERT INTO collection_likes(collection_id, user_id)
+         VALUES($1, $2)`,
+        [colId, userId]
+      );
+    }
+
+    const { count } = await db.one(
+      `SELECT COUNT(*)::int AS count
+         FROM collection_likes
+        WHERE collection_id = $1`,
+      [colId]
+    );
+
+    res.json({ success: true, likeCount: count, isLiked: !existing });
+  } catch (err) {
+    console.error('Error toggling collection like:', err);
+    res.status(500).json({ success: false });
+  }
+});
+
+// ────────────────────────────────────────────────
+//         FOLLOW ROUTES
+// ────────────────────────────────────────────────
+  app.get('/search-users', auth, async (req, res) => {
+    const q = (req.query.q || '').trim();
+    if (!q) return res.json({ users: [] });
+
+    // find up to 5 matches, excluding yourself
+    const users = await db.any(
+      `SELECT student_id AS id, username
+      FROM students
+      WHERE username ILIKE $1
+        AND student_id <> $2
+      LIMIT 5`,
+      [`%${q}%`, req.session.user.id]
+    );
+
+    const ids = users.map(u => u.id);
+    const rows = await db.any(
+      `SELECT following_id
+      FROM follows
+      WHERE follower_id = $1
+        AND following_id = ANY($2::int[])`,
+      [req.session.user.id, ids]
+    );
+    const followingIds = new Set(rows.map(r => r.following_id));
+
+    res.json({
+      users: users.map(u => ({
+        id: u.id,
+        username: u.username,
+        isFollowing: followingIds.has(u.id)
+      }))
+    });
+  });
+
+  app.post('/follow/:id', auth, async (req, res) => {
+    const target = parseInt(req.params.id, 10);
+    if (target === req.session.user.id) {
+      return res.status(400).json({ success: false, error: "Can't follow yourself." });
+    }
+    try {
+      await db.none(
+        `INSERT INTO follows (follower_id, following_id)
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING`,
+        [req.session.user.id, target]
+      );
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'DB error.' });
+    }
+  });
+
+  app.delete('/follow/:id', auth, async (req, res) => {
+    const target = parseInt(req.params.id, 10);
+    try {
+      await db.none(
+        `DELETE FROM follows
+        WHERE follower_id = $1
+          AND following_id = $2`,
+        [req.session.user.id, target]
+      );
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'DB error.' });
+    }
+  });
+  app.get('/following', auth, async (req, res) => {
+    const userId = req.session.user.id;
+  
+    try {
+      // People you follow
+      const followingRows = await db.any(`
+        SELECT s.student_id AS id,
+               s.username,
+               s.profile_photo AS avatar,
+               s.bio
+        FROM follows f
+        JOIN students s ON s.student_id = f.following_id
+        WHERE f.follower_id = $1
+        ORDER BY s.username
+      `, [userId]);
+  
+      // People following you
+      const followersRows = await db.any(`
+        SELECT s.student_id AS id,
+               s.username,
+               s.profile_photo AS avatar,
+               s.bio
+        FROM follows f
+        JOIN students s ON s.student_id = f.follower_id
+        WHERE f.following_id = $1
+        ORDER BY s.username
+      `, [userId]);
+  
+      // Build a set of IDs you follow for “follow back” logic
+      const followingIds = new Set(followingRows.map(u => u.id));
+  
+      // Format arrays for template
+      const following = followingRows.map(u => ({
+        id:       u.id,
+        username: u.username,
+        avatar:   u.avatar || '/images/default-avatar.png',
+        bio:      u.bio || ''
+      }));
+      const followers = followersRows.map(u => ({
+        id:             u.id,
+        username:       u.username,
+        avatar:         u.avatar || '/images/default-avatar.png',
+        bio:            u.bio || '',
+        isFollowedBack: followingIds.has(u.id)
+      }));
+  
+      res.render('pages/following', {
+        title:     'Following',
+        user:      req.session.user,
+        following,
+        followers
+      });
+    } catch (e) {
+      console.error('Error loading following page:', e);
+      res.render('pages/following', {
+        title:     'Following',
+        user:      req.session.user,
+        following: [],
+        followers: [],
+        error:     'Could not load follow data.'
+      });
+    }
+  });
+  
 
 // ────────────────────────────────────────────────
 //          NOTIFICATIONS API  (likes/comments)
@@ -714,7 +995,78 @@ app.get('/search', async (req, res) => {
 });
 
 app.get('/about', (req, res) => res.render('pages/about', { title: 'About', user: req.session.user }));
+app.post('/update-username', auth, async (req, res) => {
+  const { username } = req.body;
+  if (!username || !username.trim()) {
+    return res.status(400).json({ success:false, error:'Username is required.' });
+  }
+  const newUsername = username.trim();
 
+  try {
+    const exists = await db.oneOrNone(
+      `SELECT 1 FROM students
+       WHERE username = $1
+         AND student_id <> $2`,
+      [newUsername, req.session.user.id]
+    );
+    if (exists) {
+      return res.status(400).json({ success:false, error:'That username is already taken.' });
+    }
+
+    await db.none(
+      `UPDATE students
+         SET username = $1
+       WHERE student_id = $2`,
+      [newUsername, req.session.user.id]
+    );
+
+    req.session.user.username = newUsername;
+
+    res.json({ success:true, message:'Username updated successfully.' });
+  } catch (err) {
+    console.error('Error updating username:', err);
+    res.status(500).json({ success:false, error:'Could not update username.' });
+  }
+});
+
+// ---------- UPDATE PASSWORD ----------
+app.post('/update-password', auth, async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ success:false, error:'All password fields are required.' });
+  }
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ success:false, error:'New passwords do not match.' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success:false, error:'New password must be at least 6 characters.' });
+  }
+
+  try {
+    const { password: hash } = await db.one(
+      `SELECT password FROM students WHERE student_id = $1`,
+      [req.session.user.id]
+    );
+
+    const ok = await bcrypt.compare(currentPassword, hash);
+    if (!ok) {
+      return res.status(400).json({ success:false, error:'Current password is incorrect.' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await db.none(
+      `UPDATE students
+         SET password = $1
+       WHERE student_id = $2`,
+      [newHash, req.session.user.id]
+    );
+
+    res.json({ success:true, message:'Password changed successfully.' });
+  } catch (err) {
+    console.error('Error updating password:', err);
+    res.status(500).json({ success:false, error:'Could not update password.' });
+  }
+});
 // ---------- SAVE WEBSITE SETTINGS ----------
 app.post('/settings/website', async (req, res) => {
   const { theme, language } = req.body;

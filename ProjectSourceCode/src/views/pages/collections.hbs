@@ -8,39 +8,59 @@
   }
   .photo-wrapper .overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0,0,0,0.5);
-    opacity: 0;
+    opacity: 0; pointer-events: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.3s;
-    pointer-events: none;
+    transition: opacity .3s;
   }
   .photo-wrapper:hover .overlay {
-    opacity: 1;
-    pointer-events: auto;
+    opacity: 1; pointer-events: auto;
   }
+  .like-collection-btn {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: color .3s;
+  }
+  .like-collection-btn.liked { color: red; }
 </style>
 
 <div class="container py-5">
 
-  <div class="text-center mb-4">
-    <h2 class="display-4 mb-3">{{user.username}}'s Collection</h2>
+  <!-- Username Heading Centered -->
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h2 class="display-4 mb-0">{{userViewed.username}}'s Collection</h2>
+    </div>
+  </div>
+
+  <!-- Controls: Follow/Unfollow, Sort, Add Photo -->
+  <div class="d-flex justify-content-center align-items-center mb-4 gap-3">
+    {{#unless isOwner}}
+      <button id="follow-btn" class="btn btn-primary btn-lg" data-user-id="{{userViewed.id}}">
+        {{#if isFollowing}}Unfollow{{else}}Follow{{/if}}
+      </button>
+    {{/unless}}
+
+    <select id="sortSelect" class="form-select w-auto">
+      <option value="recent">Most Recent</option>
+      <option value="liked">Most Liked</option>
+    </select>
+
     {{#if isOwner}}
       <button id="add-photo-btn" class="btn btn-outline-primary btn-lg">
         <i class="fas fa-upload me-2"></i>Add Bird
       </button>
-      <input
-        type="file"
-        id="collectionImages"
-        name="collectionImages"
-        class="d-none"
-        multiple
-      >
+      <input type="file" id="collectionImages" class="d-none" multiple>
     {{/if}}
   </div>
 
@@ -56,27 +76,36 @@
         <div class="card h-100 shadow-sm">
 
           <div class="photo-wrapper">
-            <img
-              src="{{this.image_url}}"
-              class="card-img-top h-100"
-              style="object-fit:cover;"
-              alt="Photo"
-            >
+            <img src="{{this.image_url}}"
+                 class="card-img-top h-100"
+                 style="object-fit:cover;"
+                 alt="Photo">
+
             {{#if ../isOwner}}
-              <div class="overlay">
-                <button
-                  class="btn btn-light edit-desc-btn"
-                  data-id="{{this.collection_id}}"
-                  data-desc="{{this.description}}"
-                >
-                  <i class="fas fa-edit me-1"></i>Edit Description
-                </button>
-              </div>
+            <div class="overlay">
+              <button class="btn btn-light edit-desc-btn"
+                      data-id="{{this.collection_id}}"
+                      data-desc="{{this.description}}">
+                <i class="fas fa-edit me-1"></i>
+              </button>
+              <button class="btn btn-danger ms-2 delete-collection-btn"
+                      data-id="{{this.collection_id}}"
+                      title="Delete photo">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
             {{/if}}
           </div>
 
           <div class="card-body text-center">
-            <p class="card-text desc-text mb-2" data-id="{{this.collection_id}}">
+            <button class="like-collection-btn {{#if this.isLiked}}liked{{/if}}"
+                    data-id="{{this.collection_id}}">
+              <i class="fa fa-heart"></i>
+              <span class="like-count">{{this.likeCount}}</span>
+            </button>
+
+            <p class="card-text desc-text mb-2"
+               data-id="{{this.collection_id}}">
               {{#if this.description}}
                 {{this.description}}
               {{else}}
@@ -85,6 +114,7 @@
             </p>
             <small class="text-muted d-block mt-2">{{formatDate this.created_at}}</small>
           </div>
+
         </div>
       </div>
     {{else}}
@@ -102,6 +132,7 @@
   </div>
 </div>
 
+<!-- Description Modal -->
 <div class="modal fade" id="descModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <form id="desc-form" class="modal-content">
@@ -110,17 +141,15 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <textarea
-          id="desc-input"
-          class="form-control"
-          rows="4"
-          placeholder="Enter a description..."
-        ></textarea>
+        <textarea id="desc-input"
+                  class="form-control"
+                  rows="4"
+                  placeholder="Enter a description..."></textarea>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Cancel
-        </button>
+        <button type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal">Cancel</button>
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </form>
@@ -129,29 +158,63 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const addBtn    = document.getElementById('add-photo-btn');
-  const fileInput = document.getElementById('collectionImages');
-  const statusDiv = document.getElementById('upload-collection-status');
-  const grid      = document.getElementById('collection-grid');
+  // 1) Initialize sortSelect based on server-provided {{sort}}
+  const sortSelect = document.getElementById('sortSelect');
+  const initialSort = '{{sort}}';
+  if (initialSort) {
+    sortSelect.value = initialSort;
+  }
+  // 2) Handle sort changes
+  sortSelect.addEventListener('change', () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('sort', sortSelect.value);
+    window.location.search = params.toString();
+  });
 
+  // Follow/Unfollow
+  const followBtn = document.getElementById('follow-btn');
+  if (followBtn) {
+    followBtn.addEventListener('click', async () => {
+      const userId    = followBtn.dataset.userId;
+      const isUnfollow = followBtn.textContent.trim() === 'Unfollow';
+      try {
+        const res = await fetch(`/follow/${userId}`, {
+          method: isUnfollow ? 'DELETE' : 'POST',
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        if (json.success) {
+          followBtn.textContent = isUnfollow ? 'Follow' : 'Unfollow';
+        } else throw new Error();
+      } catch {
+        alert('Could not update follow status.');
+      }
+    });
+  }
+
+  // Add-photo & upload
+  const addBtn    = document.getElementById('add-photo-btn'),
+        fileInput = document.getElementById('collectionImages'),
+        statusDiv = document.getElementById('upload-collection-status'),
+        grid      = document.getElementById('collection-grid');
   if (addBtn && fileInput) {
     addBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', async () => {
       const files = Array.from(fileInput.files);
       if (!files.length) return;
       statusDiv.textContent = 'Uploading…';
-      const formData = new FormData();
-      files.forEach(f => formData.append('collectionImages', f));
-
+      const fd = new FormData();
+      files.forEach(f => fd.append('collectionImages', f));
       try {
-        const res  = await fetch('/collections/upload', {
+        const res = await fetch('/collections/upload', {
           method: 'POST',
-          body: formData,
+          body: fd,
           credentials: 'same-origin'
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
-
         data.photos.forEach(photo => {
           const col = document.createElement('div');
           col.className = 'col-12 col-md-6 col-lg-4';
@@ -161,11 +224,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <img src="${photo.image_url}" class="card-img-top h-100" style="object-fit:cover;" alt="Photo">
                 <div class="overlay">
                   <button class="btn btn-light edit-desc-btn" data-id="${photo.collection_id}" data-desc="">
-                    <i class="fas fa-edit me-1"></i>Edit Description
+                    <i class="fas fa-edit me-1"></i>
+                  </button>
+                  <button class="btn btn-danger ms-2 delete-collection-btn" data-id="${photo.collection_id}" title="Delete photo">
+                    <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </div>
               <div class="card-body text-center">
+                <button class="like-collection-btn" data-id="${photo.collection_id}">
+                  <i class="fa fa-heart"></i><span class="like-count">0</span>
+                </button>
                 <p class="card-text desc-text mb-2" data-id="${photo.collection_id}">
                   <span class="text-muted">No description</span>
                 </p>
@@ -174,19 +243,18 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
           grid.prepend(col);
         });
-
         statusDiv.textContent = 'Upload successful!';
         fileInput.value = '';
       } catch (err) {
-        console.error('Upload error:', err);
+        console.error(err);
         statusDiv.textContent = 'Upload failed: ' + err.message;
       }
     });
   }
 
+  // Edit description
   let currentId;
-  const descModal   = new bootstrap.Modal(document.getElementById('descModal'));
-
+  const descModal = new bootstrap.Modal(document.getElementById('descModal'));
   document.body.addEventListener('click', e => {
     const btn = e.target.closest('.edit-desc-btn');
     if (!btn) return;
@@ -194,31 +262,65 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('desc-input').value = btn.dataset.desc || '';
     descModal.show();
   });
-
   document.getElementById('desc-form').addEventListener('submit', async e => {
     e.preventDefault();
     const desc = document.getElementById('desc-input').value.trim();
     try {
-      const res  = await fetch(`/collections/description/${currentId}`, {
+      const res = await fetch(`/collections/description/${currentId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: desc }),
         credentials: 'same-origin'
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Save failed');
-
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
       const p = document.querySelector(`.desc-text[data-id="${currentId}"]`);
       p.textContent = desc || 'No description';
-
-      document
-        .querySelector(`.edit-desc-btn[data-id="${currentId}"]`)
-        .dataset.desc = desc;
-
+      document.querySelector(`.edit-desc-btn[data-id="${currentId}"]`).dataset.desc = desc;
       descModal.hide();
-    } catch (err) {
-      console.error('Description save error:', err);
-      alert(err.message);
+    } catch {
+      alert('Could not save description.');
+    }
+  });
+
+  // Delete photo
+  document.body.addEventListener('click', async e => {
+    const btn = e.target.closest('.delete-collection-btn');
+    if (!btn) return;
+    if (!confirm('Delete this photo?')) return;
+    try {
+      const res = await fetch(`/collections/delete/${btn.dataset.id}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      btn.closest('.col-12').remove();
+    } catch {
+      alert('Could not delete photo.');
+    }
+  });
+
+  // Like / Unlike
+  document.body.addEventListener('click', async e => {
+    const btn = e.target.closest('.like-collection-btn');
+    if (!btn) return;
+    try {
+      const res = await fetch(`/like-collection/${btn.dataset.id}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      btn.dataset.liked = json.isLiked;
+      btn.querySelector('.like-count').textContent = json.likeCount;
+      btn.classList.toggle('liked', json.isLiked);
+    } catch {
+      alert('Could not update like.');
     }
   });
 });

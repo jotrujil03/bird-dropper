@@ -21,6 +21,58 @@
     .social-header h1 { font-family: 'Montserrat', sans-serif; font-size: 2.8rem; color: #222; margin-bottom: 10px; }
     .social-header p  { font-size: 1.2rem; color: #555; }
 
+    /* ---- User Search ---- */
+    .user-search {
+      margin-bottom: 20px;
+      position: relative;
+      text-align: center;
+    }
+    .user-search input {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px 15px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      font-size: 1rem;
+    }
+    #searchResults {
+      display: none;
+      position: absolute;
+      top: 45px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 100;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .search-result {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .search-result:hover { background: #f9f9f9; }
+    .search-result button {
+      border: none;
+      background: #007bff;
+      color: #fff;
+      border-radius: 20px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background .3s;
+    }
+    .search-result button.following {
+      background: #6c757d;
+    }
+
     /* Card */
     .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.1); padding: 20px; margin-bottom: 40px; }
 
@@ -35,28 +87,24 @@
     .post-info .timestamp { font-size: .9rem; color: #888; }
 
     .post-image {
-  width: 100%;
-  overflow: hidden;             /* crop overflow */
-}
-
-/* Portrait posts (taller than wide) */
-.post-image.portrait {
-  aspect-ratio: 4 / 5;
-}
-
-/* Landscape posts (wider than tall) */
-.post-image.landscape {
-  aspect-ratio: 16 / 9;
-}
-
-.post-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;       /* fill & crop */
-  object-position: center; /* center subject */
-  display: block;
-}
-
+      width: 100%;
+      overflow: hidden;             /* crop overflow */
+    }
+    /* Portrait posts (taller than wide) */
+    .post-image.portrait {
+      aspect-ratio: 4 / 5;
+    }
+    /* Landscape posts (wider than tall) */
+    .post-image.landscape {
+      aspect-ratio: 16 / 9;
+    }
+    .post-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;       /* fill & crop */
+      object-position: center; /* center subject */
+      display: block;
+    }
 
     .post-caption { padding: 15px; font-size: 1rem; color: #444; }
 
@@ -128,25 +176,43 @@
 
     /* FAB */
     .open-modal-btn {
-  position: fixed;
-  bottom: 40px;               /* moved farther from bottom */
-  right: 40px;                /* moved farther from right */
-  background: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 120px;               /* 150% of original 80px */
-  height: 120px;              /* 150% of original 80px */
-  font-size: 3.9rem;          /* 150% of original 2.6rem */
-  line-height: 120px;         /* match height for vertical centering */
-  text-align: center;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-  z-index: 300;
-  transition: background .3s, transform .15s;
-}
-
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 120px;
+      height: 120px;
+      font-size: 3.9rem;
+      line-height: 120px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+      z-index: 300;
+      transition: background .3s, transform .15s;
+    }
     .open-modal-btn:hover { background:#0056b3; }
+    /* Feed filter buttons */
+      .feed-filter {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .feed-filter button {
+        background: none;
+        border: 1px solid #007bff;
+        color: #007bff;
+        padding: 6px 16px;
+        margin: 0 5px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background .3s, color .3s;
+      }
+      .feed-filter button.active {
+        background: #007bff;
+        color: #fff;
+      }
   </style>
 </head>
 
@@ -157,8 +223,29 @@
       <p>Share your bird sightings with the community!</p>
     </header>
 
+    <!-- USER SEARCH BAR -->
+    <div class="user-search">
+      <div class="feed-filter">
+        <button
+          id="allPostsBtn"
+          class="{{#ifEquals filter 'all'}}active{{/ifEquals}}"
+        >All Posts</button>
+        <button
+          id="followingPostsBtn"
+          class="{{#ifEquals filter 'following'}}active{{/ifEquals}}"
+        >Following</button>
+      </div>
+      <input
+        type="text"
+        id="userSearchInput"
+        placeholder="Search users..."
+        autocomplete="off"
+      >
+      <div id="searchResults"></div>
+    </div>
+
     <!-- FEED -->
-      <section class="feed">
+    <section class="feed">
       <h2>Recent Posts</h2>
       {{#if posts}}
         {{#each posts}}
@@ -166,20 +253,20 @@
             <div class="post-header">
               <img src="{{user.avatar}}" alt="avatar" class="avatar">
               <div class="post-info">
-                  <a href="/collections/{{user.id}}" class="username">{{user.username}}</a>
+                <a href="/collections/{{user.id}}" class="username">{{user.username}}</a>
                 <span class="timestamp">{{formatDate createdAt}}</span>
               </div>
               {{#if (eq ../user.id user.id)}}
-              <div class="options-menu">
-                <button class="options-button" onclick="toggleDropdown(this)">
-                  <i class="fas fa-ellipsis-v"></i>
-                </button>
-                <div class="options-dropdown">
-                  <form action="/delete-post/{{id}}" method="POST">
-                    <button type="submit"><i class="fa fa-trash"></i></button>
-                  </form>
+                <div class="options-menu">
+                  <button class="options-button" onclick="toggleDropdown(this)">
+                    <i class="fas fa-ellipsis-v"></i>
+                  </button>
+                  <div class="options-dropdown">
+                    <form action="/delete-post/{{id}}" method="POST">
+                      <button type="submit"><i class="fa fa-trash"></i></button>
+                    </form>
+                  </div>
                 </div>
-              </div>
               {{/if}}
             </div>
 
@@ -367,7 +454,14 @@
         document.querySelectorAll('.comment-options-dropdown').forEach(menu => menu.style.display = 'none');
       }
     });
-
+    document.getElementById('allPostsBtn').addEventListener('click', () => {
+      const base = window.location.pathname;
+      window.location.href = `${base}?filter=all`;
+    });
+    document.getElementById('followingPostsBtn').addEventListener('click', () => {
+      const base = window.location.pathname;
+      window.location.href = `${base}?filter=following`;
+    });
     /* Delete comment */
     document.addEventListener('click', function(e) {
       if (!e.target.closest('.delete-comment-btn')) return;
@@ -395,7 +489,7 @@
     function closeModal() { document.getElementById('postModal').style.display = 'none'; }
     window.onclick = function(e) {
       const modal = document.getElementById('postModal');
-      if (e.target === modal) modal.style.display = 'none';
+      if (e.target === modal) modal.style.display = 'none'; 
     };
 
     /* custom file input display + EXIF auto‑location */
@@ -431,29 +525,90 @@
       return dec;
     }
 
-// run once on page load
-window.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.post-image img').forEach(img => {
-    // when the browser has the real image size
-    if (img.complete) {
-      classify(img);
-    } else {
-      img.addEventListener('load', () => classify(img));
+    // run once on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.post-image img').forEach(img => {
+        if (img.complete) {
+          classify(img);
+        } else {
+          img.addEventListener('load', () => classify(img));
+        }
+      });
+    });
+
+    function classify(img) {
+      const { naturalWidth: w, naturalHeight: h } = img;
+      const container = img.parentElement;
+      if (w > h) {
+        container.classList.add('landscape');
+      } else {
+        container.classList.add('portrait');
+      }
     }
-  });
-});
 
-function classify(img) {
-  const { naturalWidth: w, naturalHeight: h } = img;
-  const container = img.parentElement;
-  if (w > h) {
-    container.classList.add('landscape');
-  } else {
-    container.classList.add('portrait');
-  }
-}
+    // ─── Debounce helper ───
+    function debounce(fn, delay) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
 
+    const userSearchInput = document.getElementById('userSearchInput');
+    const searchResults   = document.getElementById('searchResults');
 
+    userSearchInput.addEventListener('input', debounce(e => {
+      const q = e.target.value.trim();
+      if (!q) {
+        searchResults.style.display = 'none';
+        searchResults.innerHTML = '';
+        return;
+      }
+      fetch(`/search-users?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(data => {
+          const list = data.users || [];
+          if (!list.length) {
+            searchResults.innerHTML = '<div class="search-result">No users found.</div>';
+          } else {
+            searchResults.innerHTML = list.map(u => `
+              <div class="search-result" data-user-id="${u.id}">
+                <span>${u.username}</span>
+                <button class="follow-btn ${u.isFollowing ? 'following' : ''}"
+                        data-following="${u.isFollowing}">
+                  ${u.isFollowing ? 'Unfollow' : 'Follow'}
+                </button>
+              </div>
+            `).join('');
+          }
+          searchResults.style.display = 'block';
+        });
+    }, 300));
+
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.follow-btn');
+      if (btn) {
+        e.preventDefault();
+        const row = btn.closest('.search-result');
+        const id  = row.dataset.userId;
+        const following = btn.dataset.following === 'true';
+        const method = following ? 'DELETE' : 'POST';
+        fetch(`/follow/${id}`, { method })
+          .then(r => r.json())
+          .then(d => {
+            if (d.success) {
+              btn.dataset.following = (!following).toString();
+              btn.textContent      = following ? 'Follow' : 'Unfollow';
+              btn.classList.toggle('following', !following);
+            } else {
+              alert(d.error || 'Could not update follow status.');
+            }
+          });
+      } else if (!e.target.closest('.user-search')) {
+        searchResults.style.display = 'none';
+      }
+    });
   </script>
 </body>
 </html>
