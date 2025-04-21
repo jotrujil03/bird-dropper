@@ -73,6 +73,15 @@ CREATE TABLE IF NOT EXISTS collections (
   description   TEXT,
   created_at    TIMESTAMP   DEFAULT NOW()
 );
-
+-- ===========================
+--  FOLLOW
+-- ===========================
 CREATE INDEX IF NOT EXISTS idx_collections_user_id
   ON collections(user_id);
+
+  CREATE TABLE IF NOT EXISTS follows (
+  follower_id  INTEGER    NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+  following_id INTEGER    NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+  created_at   TIMESTAMP  DEFAULT NOW(),
+  PRIMARY KEY (follower_id, following_id)
+);

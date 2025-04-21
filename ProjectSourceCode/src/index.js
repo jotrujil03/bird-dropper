@@ -217,13 +217,13 @@ app.post('/post', auth, upload.single('photo'), async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).send('No image uploaded.');
 
- /* replace unsafe chars with dashes and collapse repeats */
-const safeName = file.originalname
-.normalize('NFKD')                 // remove weird unicode
-.replace(/[^\w.\-]+/g, '-')        // keep letters, numbers, _, -, .
-.replace(/-+/g, '-');              // no double dashes
+  /* replace unsafe chars with dashes and collapse repeats */
+  const safeName = file.originalname
+    .normalize('NFKD')                 // remove weird unicode
+    .replace(/[^\w.\-]+/g, '-')        // keep letters, numbers, _, -, .
+    .replace(/-+/g, '-');              // no double dashes
 
-const fileName = `posts/${Date.now()}-${safeName}`;
+  const fileName = `posts/${Date.now()}-${safeName}`;
 
   const { error: upErr } = await supabase
     .storage.from(BUCKET)
@@ -325,7 +325,7 @@ app.post('/delete-comment/:id', auth, async (req, res) => {
   } catch (e) {
     console.error(e);
     const msg = 'Failed';
-    req.accepts('json')
+    return req.accepts('json')
       ? res.status(500).json({ success: false, error: msg })
       : res.status(500).send(msg);
   }
@@ -333,24 +333,52 @@ app.post('/delete-comment/:id', auth, async (req, res) => {
 
 // ---------- SOCIAL FEED ----------
 app.get('/social', auth, async (req, res) => {
+  const userId = req.session.user.id;
+  const filter = req.query.filter === 'following' ? 'following' : 'all';
+
   try {
-    const posts = await db.any(`
-      SELECT p.*, s.username, s.profile_photo AS avatar, p.user_id,
-             (SELECT COUNT(*) FROM likes WHERE post_id=p.post_id) AS like_count,
-             (SELECT COALESCE(json_agg(json_build_object(
-                 'comment_id',c.comment_id,
-                 'comment'   ,c.comment,
-                 'username'  ,s2.username,
-                 'avatar'    ,s2.profile_photo
-             )),'[]'::json)
-              FROM comments c
-              JOIN students s2 ON c.user_id=s2.student_id
-              WHERE c.post_id=p.post_id) AS comments
-      FROM posts p
-      JOIN students s ON p.user_id=s.student_id
-      ORDER BY p.created_at DESC
-    `);
-    const formatted = posts.map(p => ({
+    let postsRaw;
+    if (filter === 'following') {
+      // only posts from people I follow
+      postsRaw = await db.any(`
+        SELECT p.*, s.username, s.profile_photo AS avatar, p.user_id,
+               (SELECT COUNT(*) FROM likes WHERE post_id = p.post_id) AS like_count,
+               (SELECT COALESCE(json_agg(json_build_object(
+                 'comment_id', c.comment_id,
+                 'comment'   , c.comment,
+                 'username'  , s2.username,
+                 'avatar'    , s2.profile_photo
+               )), '[]'::json)
+                FROM comments c
+                JOIN students s2 ON c.user_id = s2.student_id
+                WHERE c.post_id = p.post_id) AS comments
+        FROM posts p
+        JOIN follows f      ON f.following_id = p.user_id
+        JOIN students s     ON p.user_id   = s.student_id
+        WHERE f.follower_id = $1
+        ORDER BY p.created_at DESC
+      `, [userId]);
+    } else {
+      // all posts
+      postsRaw = await db.any(`
+        SELECT p.*, s.username, s.profile_photo AS avatar, p.user_id,
+               (SELECT COUNT(*) FROM likes WHERE post_id = p.post_id) AS like_count,
+               (SELECT COALESCE(json_agg(json_build_object(
+                 'comment_id', c.comment_id,
+                 'comment'   , c.comment,
+                 'username'  , s2.username,
+                 'avatar'    , s2.profile_photo
+               )), '[]'::json)
+                FROM comments c
+                JOIN students s2 ON c.user_id = s2.student_id
+                WHERE c.post_id = p.post_id) AS comments
+        FROM posts p
+        JOIN students s ON p.user_id = s.student_id
+        ORDER BY p.created_at DESC
+      `);
+    }
+
+    const posts = postsRaw.map(p => ({
       id        : p.post_id,
       imageUrl  : p.image_url,
       caption   : p.caption,
@@ -364,10 +392,22 @@ app.get('/social', auth, async (req, res) => {
         avatar  : p.avatar || '/images/cardinal-bird-branch.jpg'
       }
     }));
-    res.render('pages/social', { title: 'Social', user: req.session.user, posts: formatted });
+
+    res.render('pages/social', {
+      title:  'Social',
+      user:   req.session.user,
+      posts,
+      filter
+    });
   } catch (e) {
     console.error(e);
-    res.render('pages/social', { title: 'Social', posts: [], error: 'Could not load posts' });
+    res.render('pages/social', {
+      title:  'Social',
+      user:   req.session.user,
+      posts:  [],
+      filter,
+      error:  'Could not load posts'
+    });
   }
 });
 
@@ -379,39 +419,66 @@ app.get('/collections', auth, (req, res) => {
 });
 
 app.get('/collections/:userId', auth, async (req, res) => {
-  const userId = parseInt(req.params.userId, 10);
-  if (isNaN(userId)) {
+  const profileUserId = parseInt(req.params.userId, 10);
+  if (isNaN(profileUserId)) {
     return res.status(400).send('Invalid user ID');
   }
-  const myId   = parseInt(req.session.user.id,   10);
-  const isOwner = myId === userId;
+  const sessionUserId = parseInt(req.session.user.id, 10);
+  const isOwner       = sessionUserId === profileUserId;
 
   try {
-    const owner = await db.oneOrNone(
-      'SELECT student_id, username FROM students WHERE student_id = $1',
-      [userId]
+    // 1) load the profile’s user
+    const userViewed = await db.oneOrNone(
+      `SELECT
+         student_id   AS id,
+         username,
+         profile_photo AS profileImage,
+         bio
+       FROM students
+       WHERE student_id = $1`,
+      [profileUserId]
     );
-    if (!owner) return res.status(404).json({ error: 'User not found' });
+    if (!userViewed) {
+      return res.status(404).render('pages/404');
+    }
 
+    // 2) if not owner, check follow status
+    let isFollowing = false;
+    if (!isOwner) {
+      const row = await db.oneOrNone(
+        `SELECT 1
+           FROM follows
+          WHERE follower_id  = $1
+            AND following_id = $2`,
+        [sessionUserId, profileUserId]
+      );
+      isFollowing = !!row;
+    }
+
+    // 3) load that user’s collection photos
     const photos = await db.any(
       `SELECT collection_id, image_url, description, created_at
          FROM collections
         WHERE user_id = $1
      ORDER BY created_at DESC`,
-      [userId]
+      [profileUserId]
     );
 
+    // 4) render with both session user and viewed user
     return res.render('pages/collections', {
-      user:           owner,
-      photos,
-      isOwner,               
-      sessionUserId:  myId   
+      user:         req.session.user,  // logged‑in user for header, etc.
+      userViewed,                      // the profile we’re viewing
+      isOwner,                         // true if it's your own page
+      isFollowing,                     // whether you follow them
+      photos
     });
+
   } catch (err) {
     console.error('Error loading collection:', err);
     return res.status(500).send('Error loading collection');
   }
 });
+
 
 app.post(
   '/collections/upload',
@@ -470,6 +537,30 @@ app.post(
     }
   }
 );
+app.post('/collections/delete/:id', auth, async (req, res) => {
+  const colId        = parseInt(req.params.id, 10);
+  const sessionUserId = req.session.user.id;
+
+  try {
+    const row = await db.oneOrNone(
+      'SELECT image_url FROM collections WHERE collection_id = $1 AND user_id = $2',
+      [colId, sessionUserId]
+    );
+    if (!row) {
+      return res.status(403).send('Unauthorized to delete this item.');
+    }
+    const key = storageKeyFromUrl(row.image_url);
+    if (key) {
+      const { error: delErr } = await supabase.storage.from(BUCKET).remove([key]);
+      if (delErr) console.warn('⚠️  Could not delete image from storage:', delErr.message);
+    }
+    await db.none('DELETE FROM collections WHERE collection_id = $1', [colId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting collection item:', err);
+    res.status(500).json({ success: false, error: 'Failed to delete.' });
+  }
+});
 
 app.post('/collections/description/:id', auth, async (req, res) => {
   const colId       = parseInt(req.params.id, 10);
@@ -491,6 +582,110 @@ app.post('/collections/description/:id', auth, async (req, res) => {
     return res.status(500).json({ success: false, error: 'Could not save description.' });
   }
 });
+// ────────────────────────────────────────────────
+//         FOLLOW ROUTES
+// ────────────────────────────────────────────────
+  app.get('/search-users', auth, async (req, res) => {
+    const q = (req.query.q || '').trim();
+    if (!q) return res.json({ users: [] });
+
+    // find up to 5 matches, excluding yourself
+    const users = await db.any(
+      `SELECT student_id AS id, username
+      FROM students
+      WHERE username ILIKE $1
+        AND student_id <> $2
+      LIMIT 5`,
+      [`%${q}%`, req.session.user.id]
+    );
+
+    const ids = users.map(u => u.id);
+    const rows = await db.any(
+      `SELECT following_id
+      FROM follows
+      WHERE follower_id = $1
+        AND following_id = ANY($2::int[])`,
+      [req.session.user.id, ids]
+    );
+    const followingIds = new Set(rows.map(r => r.following_id));
+
+    res.json({
+      users: users.map(u => ({
+        id: u.id,
+        username: u.username,
+        isFollowing: followingIds.has(u.id)
+      }))
+    });
+  });
+
+  app.post('/follow/:id', auth, async (req, res) => {
+    const target = parseInt(req.params.id, 10);
+    if (target === req.session.user.id) {
+      return res.status(400).json({ success: false, error: "Can't follow yourself." });
+    }
+    try {
+      await db.none(
+        `INSERT INTO follows (follower_id, following_id)
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING`,
+        [req.session.user.id, target]
+      );
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'DB error.' });
+    }
+  });
+
+  app.delete('/follow/:id', auth, async (req, res) => {
+    const target = parseInt(req.params.id, 10);
+    try {
+      await db.none(
+        `DELETE FROM follows
+        WHERE follower_id = $1
+          AND following_id = $2`,
+        [req.session.user.id, target]
+      );
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'DB error.' });
+    }
+  });
+  app.get('/following', auth, async (req, res) => {
+    try {
+      const rows = await db.any(`
+        SELECT s.student_id AS id,
+              s.username,
+              s.profile_photo AS avatar,
+              s.bio
+        FROM follows f
+        JOIN students s
+          ON s.student_id = f.following_id
+        WHERE f.follower_id = $1
+        ORDER BY s.username
+      `, [req.session.user.id]);
+
+      const following = rows.map(u => ({
+        id:       u.id,
+        username: u.username,
+        avatar:   u.avatar || '/images/default-avatar.png',
+        bio:      u.bio || ''
+      }));
+
+      res.render('pages/following', {
+        title:     'Following',
+        user:      req.session.user,
+        following
+      });
+    } catch (e) {
+      console.error(e);
+      res.render('pages/following', {
+        title:     'Following',
+        user:      req.session.user,
+        following: [],
+        error:     'Could not load your following list.'
+      });
+    }
+  });
 
 
 // ────────────────────────────────────────────────

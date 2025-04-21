@@ -8,10 +8,8 @@
   }
   .photo-wrapper .overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0,0,0,0.5);
     opacity: 0;
     display: flex;
@@ -27,9 +25,17 @@
 </style>
 
 <div class="container py-5">
-
   <div class="text-center mb-4">
-    <h2 class="display-4 mb-3">{{user.username}}'s Collection</h2>
+    <h2 class="display-4 mb-3">{{userViewed.username}}'s Collection</h2>
+
+    {{#unless isOwner}}
+      <button
+        id="follow-btn"
+        class="btn btn-primary btn-lg mb-3"
+        data-user-id="{{userViewed.id}}"
+      >{{#if isFollowing}}Unfollow{{else}}Follow{{/if}}</button>
+    {{/unless}}
+
     {{#if isOwner}}
       <button id="add-photo-btn" class="btn btn-outline-primary btn-lg">
         <i class="fas fa-upload me-2"></i>Add Bird
@@ -54,7 +60,6 @@
     {{#each photos}}
       <div class="col-12 col-md-6 col-lg-4">
         <div class="card h-100 shadow-sm">
-
           <div class="photo-wrapper">
             <img
               src="{{this.image_url}}"
@@ -62,6 +67,7 @@
               style="object-fit:cover;"
               alt="Photo"
             >
+
             {{#if ../isOwner}}
               <div class="overlay">
                 <button
@@ -70,6 +76,14 @@
                   data-desc="{{this.description}}"
                 >
                   <i class="fas fa-edit me-1"></i>Edit Description
+                </button>
+
+                <button
+                  class="btn btn-danger ms-2 delete-collection-btn"
+                  data-id="{{this.collection_id}}"
+                  title="Delete photo"
+                >
+                  <i class="fas fa-trash"></i>
                 </button>
               </div>
             {{/if}}
@@ -129,6 +143,33 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  const followBtn = document.getElementById('follow-btn');
+  if (followBtn) {
+    followBtn.addEventListener('click', async () => {
+      const userId    = followBtn.dataset.userId;
+      const isUnfollow = followBtn.textContent.trim() === 'Unfollow';
+      try {
+        const res = await fetch(`/follow/${userId}`, {
+          method: isUnfollow ? 'DELETE' : 'POST',
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        if (data.success) {
+          followBtn.textContent = isUnfollow ? 'Follow' : 'Unfollow';
+        } else {
+          throw new Error(data.error || 'Unknown error');
+        }
+      } catch (err) {
+        console.error('Follow error:', err);
+        alert(err.message);
+      }
+    });
+  }
   const addBtn    = document.getElementById('add-photo-btn');
   const fileInput = document.getElementById('collectionImages');
   const statusDiv = document.getElementById('upload-collection-status');
@@ -163,6 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
                   <button class="btn btn-light edit-desc-btn" data-id="${photo.collection_id}" data-desc="">
                     <i class="fas fa-edit me-1"></i>Edit Description
                   </button>
+                  <button class="btn btn-danger ms-2 delete-collection-btn" data-id="${photo.collection_id}" title="Delete photo">
+                    <i class="fas fa-trash"></i>
+                  </button>
                 </div>
               </div>
               <div class="card-body text-center">
@@ -183,9 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
   let currentId;
-  const descModal   = new bootstrap.Modal(document.getElementById('descModal'));
+  const descModal = new bootstrap.Modal(document.getElementById('descModal'));
 
   document.body.addEventListener('click', e => {
     const btn = e.target.closest('.edit-desc-btn');
@@ -210,15 +253,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const p = document.querySelector(`.desc-text[data-id="${currentId}"]`);
       p.textContent = desc || 'No description';
-
       document
         .querySelector(`.edit-desc-btn[data-id="${currentId}"]`)
         .dataset.desc = desc;
-
       descModal.hide();
     } catch (err) {
       console.error('Description save error:', err);
       alert(err.message);
+    }
+  });
+
+  document.body.addEventListener('click', async e => {
+    const delBtn = e.target.closest('.delete-collection-btn');
+    if (!delBtn) return;
+    if (!confirm('Delete this photo?')) return;
+    const id = delBtn.dataset.id;
+    try {
+      const res = await fetch(`/collections/delete/${id}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.success) {
+        delBtn.closest('.col-12').remove();
+      } else {
+        throw new Error(data.error || 'Failed to delete');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Could not delete photo: ' + (err.message || 'Network error'));
     }
   });
 });
