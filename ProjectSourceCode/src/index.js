@@ -426,8 +426,6 @@ app.get('/collections/:userId', auth, async (req, res) => {
 
   const sessionUserId = req.session.user.id;
   const isOwner       = sessionUserId === profileUserId;
-  // read sort param, default to "recent"
-  const sort = req.query.sort === 'liked' ? 'liked' : 'recent';
 
   try {
     // 1) load profile’s user
@@ -458,7 +456,7 @@ app.get('/collections/:userId', auth, async (req, res) => {
       isFollowing = !!followRow;
     }
 
-    // 3) load collection photos
+    // 3) load photos
     let photos = await db.any(
       `SELECT
          collection_id,
@@ -466,11 +464,12 @@ app.get('/collections/:userId', auth, async (req, res) => {
          description,
          created_at
        FROM collections
-       WHERE user_id = $1`,
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
       [profileUserId]
     );
 
-    // 4) fetch like counts & whether session user liked each
+    // 4) attach like counts & your like‑status
     const ids = photos.map(p => p.collection_id);
     if (ids.length) {
       const likesRows = await db.any(
@@ -496,20 +495,12 @@ app.get('/collections/:userId', auth, async (req, res) => {
       }));
     }
 
-    // 5) sort in‑memory
-    if (sort === 'liked') {
-      photos.sort((a, b) => b.likeCount - a.likeCount);
-    } else {
-      photos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }
-
-    // 6) render
+    // 5) render page
     res.render('pages/collections', {
       user:         req.session.user,
       userViewed,
       isOwner,
       isFollowing,
-      sort,
       photos
     });
 
@@ -518,7 +509,6 @@ app.get('/collections/:userId', auth, async (req, res) => {
     res.status(500).send('Error loading collection');
   }
 });
-
 
 
 app.post(
@@ -734,42 +724,69 @@ app.post('/like-collection/:id', auth, async (req, res) => {
     }
   });
   app.get('/following', auth, async (req, res) => {
+    const userId = req.session.user.id;
+  
     try {
-      const rows = await db.any(`
+      // People you follow
+      const followingRows = await db.any(`
         SELECT s.student_id AS id,
-              s.username,
-              s.profile_photo AS avatar,
-              s.bio
+               s.username,
+               s.profile_photo AS avatar,
+               s.bio
         FROM follows f
-        JOIN students s
-          ON s.student_id = f.following_id
+        JOIN students s ON s.student_id = f.following_id
         WHERE f.follower_id = $1
         ORDER BY s.username
-      `, [req.session.user.id]);
-
-      const following = rows.map(u => ({
+      `, [userId]);
+  
+      // People following you
+      const followersRows = await db.any(`
+        SELECT s.student_id AS id,
+               s.username,
+               s.profile_photo AS avatar,
+               s.bio
+        FROM follows f
+        JOIN students s ON s.student_id = f.follower_id
+        WHERE f.following_id = $1
+        ORDER BY s.username
+      `, [userId]);
+  
+      // Build a set of IDs you follow for “follow back” logic
+      const followingIds = new Set(followingRows.map(u => u.id));
+  
+      // Format arrays for template
+      const following = followingRows.map(u => ({
         id:       u.id,
         username: u.username,
         avatar:   u.avatar || '/images/default-avatar.png',
         bio:      u.bio || ''
       }));
-
+      const followers = followersRows.map(u => ({
+        id:             u.id,
+        username:       u.username,
+        avatar:         u.avatar || '/images/default-avatar.png',
+        bio:            u.bio || '',
+        isFollowedBack: followingIds.has(u.id)
+      }));
+  
       res.render('pages/following', {
         title:     'Following',
         user:      req.session.user,
-        following
+        following,
+        followers
       });
     } catch (e) {
-      console.error(e);
+      console.error('Error loading following page:', e);
       res.render('pages/following', {
         title:     'Following',
         user:      req.session.user,
         following: [],
-        error:     'Could not load your following list.'
+        followers: [],
+        error:     'Could not load follow data.'
       });
     }
   });
-
+  
 
 // ────────────────────────────────────────────────
 //          NOTIFICATIONS API  (likes/comments)
