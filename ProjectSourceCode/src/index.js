@@ -423,14 +423,17 @@ app.get('/collections/:userId', auth, async (req, res) => {
   if (isNaN(profileUserId)) {
     return res.status(400).send('Invalid user ID');
   }
-  const sessionUserId = parseInt(req.session.user.id, 10);
+
+  const sessionUserId = req.session.user.id;
   const isOwner       = sessionUserId === profileUserId;
+  // read sort param, default to "recent"
+  const sort = req.query.sort === 'liked' ? 'liked' : 'recent';
 
   try {
-    // 1) load the profile’s user
+    // 1) load profile’s user
     const userViewed = await db.oneOrNone(
       `SELECT
-         student_id   AS id,
+         student_id    AS id,
          username,
          profile_photo AS profileImage,
          bio
@@ -442,42 +445,80 @@ app.get('/collections/:userId', auth, async (req, res) => {
       return res.status(404).render('pages/404');
     }
 
-    // 2) if not owner, check follow status
+    // 2) follow status (if not owner)
     let isFollowing = false;
     if (!isOwner) {
-      const row = await db.oneOrNone(
+      const followRow = await db.oneOrNone(
         `SELECT 1
            FROM follows
           WHERE follower_id  = $1
             AND following_id = $2`,
         [sessionUserId, profileUserId]
       );
-      isFollowing = !!row;
+      isFollowing = !!followRow;
     }
 
-    // 3) load that user’s collection photos
-    const photos = await db.any(
-      `SELECT collection_id, image_url, description, created_at
-         FROM collections
-        WHERE user_id = $1
-     ORDER BY created_at DESC`,
+    // 3) load collection photos
+    let photos = await db.any(
+      `SELECT
+         collection_id,
+         image_url,
+         description,
+         created_at
+       FROM collections
+       WHERE user_id = $1`,
       [profileUserId]
     );
 
-    // 4) render with both session user and viewed user
-    return res.render('pages/collections', {
-      user:         req.session.user,  // logged‑in user for header, etc.
-      userViewed,                      // the profile we’re viewing
-      isOwner,                         // true if it's your own page
-      isFollowing,                     // whether you follow them
+    // 4) fetch like counts & whether session user liked each
+    const ids = photos.map(p => p.collection_id);
+    if (ids.length) {
+      const likesRows = await db.any(
+        `SELECT collection_id, COUNT(*)::int AS like_count
+           FROM collection_likes
+          WHERE collection_id = ANY($1::int[])
+          GROUP BY collection_id`,
+        [ids]
+      );
+      const userLikeRows = await db.any(
+        `SELECT collection_id
+           FROM collection_likes
+          WHERE user_id = $1
+            AND collection_id = ANY($2::int[])`,
+        [sessionUserId, ids]
+      );
+      const likeCountMap = new Map(likesRows.map(r => [r.collection_id, r.like_count]));
+      const likedSet     = new Set(userLikeRows.map(r => r.collection_id));
+      photos = photos.map(p => ({
+        ...p,
+        likeCount: likeCountMap.get(p.collection_id) || 0,
+        isLiked:   likedSet.has(p.collection_id)
+      }));
+    }
+
+    // 5) sort in‑memory
+    if (sort === 'liked') {
+      photos.sort((a, b) => b.likeCount - a.likeCount);
+    } else {
+      photos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    // 6) render
+    res.render('pages/collections', {
+      user:         req.session.user,
+      userViewed,
+      isOwner,
+      isFollowing,
+      sort,
       photos
     });
 
   } catch (err) {
     console.error('Error loading collection:', err);
-    return res.status(500).send('Error loading collection');
+    res.status(500).send('Error loading collection');
   }
 });
+
 
 
 app.post(
@@ -582,6 +623,48 @@ app.post('/collections/description/:id', auth, async (req, res) => {
     return res.status(500).json({ success: false, error: 'Could not save description.' });
   }
 });
+// ---------- LIKE / UNLIKE COLLECTION ITEM ----------
+app.post('/like-collection/:id', auth, async (req, res) => {
+  const colId  = parseInt(req.params.id, 10);
+  const userId = req.session.user.id;
+  try {
+    const existing = await db.oneOrNone(
+      `SELECT 1
+         FROM collection_likes
+        WHERE collection_id=$1
+          AND user_id=$2`,
+      [colId, userId]
+    );
+
+    if (existing) {
+      await db.none(
+        `DELETE FROM collection_likes
+          WHERE collection_id=$1
+            AND user_id=$2`,
+        [colId, userId]
+      );
+    } else {
+      await db.none(
+        `INSERT INTO collection_likes(collection_id, user_id)
+         VALUES($1, $2)`,
+        [colId, userId]
+      );
+    }
+
+    const { count } = await db.one(
+      `SELECT COUNT(*)::int AS count
+         FROM collection_likes
+        WHERE collection_id = $1`,
+      [colId]
+    );
+
+    res.json({ success: true, likeCount: count, isLiked: !existing });
+  } catch (err) {
+    console.error('Error toggling collection like:', err);
+    res.status(500).json({ success: false });
+  }
+});
+
 // ────────────────────────────────────────────────
 //         FOLLOW ROUTES
 // ────────────────────────────────────────────────
@@ -885,7 +968,78 @@ app.get('/search', async (req, res) => {
 });
 
 app.get('/about', (req, res) => res.render('pages/about', { title: 'About', user: req.session.user }));
+app.post('/update-username', auth, async (req, res) => {
+  const { username } = req.body;
+  if (!username || !username.trim()) {
+    return res.status(400).json({ success:false, error:'Username is required.' });
+  }
+  const newUsername = username.trim();
 
+  try {
+    const exists = await db.oneOrNone(
+      `SELECT 1 FROM students
+       WHERE username = $1
+         AND student_id <> $2`,
+      [newUsername, req.session.user.id]
+    );
+    if (exists) {
+      return res.status(400).json({ success:false, error:'That username is already taken.' });
+    }
+
+    await db.none(
+      `UPDATE students
+         SET username = $1
+       WHERE student_id = $2`,
+      [newUsername, req.session.user.id]
+    );
+
+    req.session.user.username = newUsername;
+
+    res.json({ success:true, message:'Username updated successfully.' });
+  } catch (err) {
+    console.error('Error updating username:', err);
+    res.status(500).json({ success:false, error:'Could not update username.' });
+  }
+});
+
+// ---------- UPDATE PASSWORD ----------
+app.post('/update-password', auth, async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ success:false, error:'All password fields are required.' });
+  }
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ success:false, error:'New passwords do not match.' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success:false, error:'New password must be at least 6 characters.' });
+  }
+
+  try {
+    const { password: hash } = await db.one(
+      `SELECT password FROM students WHERE student_id = $1`,
+      [req.session.user.id]
+    );
+
+    const ok = await bcrypt.compare(currentPassword, hash);
+    if (!ok) {
+      return res.status(400).json({ success:false, error:'Current password is incorrect.' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await db.none(
+      `UPDATE students
+         SET password = $1
+       WHERE student_id = $2`,
+      [newHash, req.session.user.id]
+    );
+
+    res.json({ success:true, message:'Password changed successfully.' });
+  } catch (err) {
+    console.error('Error updating password:', err);
+    res.status(500).json({ success:false, error:'Could not update password.' });
+  }
+});
 // ---------- SAVE WEBSITE SETTINGS ----------
 app.post('/settings/website', async (req, res) => {
   const { theme, language } = req.body;

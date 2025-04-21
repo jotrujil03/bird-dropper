@@ -85,3 +85,13 @@ CREATE INDEX IF NOT EXISTS idx_collections_user_id
   created_at   TIMESTAMP  DEFAULT NOW(),
   PRIMARY KEY (follower_id, following_id)
 );
+-- ===========================
+--  COLLECTION LIKES
+-- ===========================
+CREATE TABLE IF NOT EXISTS collection_likes (
+  collection_like_id SERIAL PRIMARY KEY,
+  collection_id      INTEGER NOT NULL REFERENCES collections(collection_id) ON DELETE CASCADE,
+  user_id            INTEGER NOT NULL REFERENCES students(student_id)    ON DELETE CASCADE,
+  created_at         TIMESTAMP DEFAULT NOW(),
+  UNIQUE(collection_id, user_id)
+);
