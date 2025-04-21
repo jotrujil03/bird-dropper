@@ -31,9 +31,7 @@
     cursor: pointer;
     transition: color .3s;
   }
-  .like-collection-btn.liked {
-    color: red;
-  }
+  .like-collection-btn.liked { color: red; }
 </style>
 
 <div class="container py-5">
@@ -54,8 +52,8 @@
     {{/unless}}
 
     <select id="sortSelect" class="form-select w-auto">
-      <option value="recent" {{#if (eq sort "recent")}}selected{{/if}}>Most Recent</option>
-      <option value="liked" {{#if (eq sort "liked")}}selected{{/if}}>Most Liked</option>
+      <option value="recent">Most Recent</option>
+      <option value="liked">Most Liked</option>
     </select>
 
     {{#if isOwner}}
@@ -160,8 +158,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // Sort selector
+  // 1) Initialize sortSelect based on server-provided {{sort}}
   const sortSelect = document.getElementById('sortSelect');
+  const initialSort = '{{sort}}';
+  if (initialSort) {
+    sortSelect.value = initialSort;
+  }
+  // 2) Handle sort changes
   sortSelect.addEventListener('change', () => {
     const params = new URLSearchParams(window.location.search);
     params.set('sort', sortSelect.value);
@@ -184,9 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const json = await res.json();
         if (json.success) {
           followBtn.textContent = isUnfollow ? 'Follow' : 'Unfollow';
-        } else {
-          throw new Error();
-        }
+        } else throw new Error();
       } catch {
         alert('Could not update follow status.');
       }
@@ -194,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Add-photo & upload
-  const addBtn = document.getElementById('add-photo-btn'),
+  const addBtn    = document.getElementById('add-photo-btn'),
         fileInput = document.getElementById('collectionImages'),
         statusDiv = document.getElementById('upload-collection-status'),
         grid      = document.getElementById('collection-grid');
@@ -295,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      if (!json.success) throw new Error();
+      if (!json.success) throw new Error(json.error);
       btn.closest('.col-12').remove();
     } catch {
       alert('Could not delete photo.');

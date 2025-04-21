@@ -423,92 +423,78 @@ app.get('/collections/:userId', auth, async (req, res) => {
   if (isNaN(profileUserId)) {
     return res.status(400).send('Invalid user ID');
   }
-
   const sessionUserId = req.session.user.id;
-  const isOwner       = sessionUserId === profileUserId;
+  const isOwner = sessionUserId === profileUserId;
+  const sort = req.query.sort === 'liked' ? 'liked' : 'recent';
 
   try {
-    // 1) load profile’s user
-    const userViewed = await db.oneOrNone(
-      `SELECT
-         student_id    AS id,
-         username,
-         profile_photo AS profileImage,
-         bio
-       FROM students
-       WHERE student_id = $1`,
-      [profileUserId]
-    );
+    const userViewed = await db.oneOrNone(`
+      SELECT student_id AS id, username, profile_photo AS profileImage, bio
+      FROM students
+      WHERE student_id = $1
+    `, [profileUserId]);
     if (!userViewed) {
       return res.status(404).render('pages/404');
     }
 
-    // 2) follow status (if not owner)
     let isFollowing = false;
     if (!isOwner) {
-      const followRow = await db.oneOrNone(
-        `SELECT 1
-           FROM follows
-          WHERE follower_id  = $1
-            AND following_id = $2`,
-        [sessionUserId, profileUserId]
-      );
+      const followRow = await db.oneOrNone(`
+        SELECT 1
+        FROM follows
+        WHERE follower_id = $1 AND following_id = $2
+      `, [sessionUserId, profileUserId]);
       isFollowing = !!followRow;
     }
 
-    // 3) load photos
-    let photos = await db.any(
-      `SELECT
-         collection_id,
-         image_url,
-         description,
-         created_at
-       FROM collections
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [profileUserId]
-    );
+    let photos = await db.any(`
+      SELECT collection_id, image_url, description, created_at
+      FROM collections
+      WHERE user_id = $1
+    `, [profileUserId]);
 
-    // 4) attach like counts & your like‑status
     const ids = photos.map(p => p.collection_id);
     if (ids.length) {
-      const likesRows = await db.any(
-        `SELECT collection_id, COUNT(*)::int AS like_count
-           FROM collection_likes
-          WHERE collection_id = ANY($1::int[])
-          GROUP BY collection_id`,
-        [ids]
-      );
-      const userLikeRows = await db.any(
-        `SELECT collection_id
-           FROM collection_likes
-          WHERE user_id = $1
-            AND collection_id = ANY($2::int[])`,
-        [sessionUserId, ids]
-      );
+      const likesRows = await db.any(`
+        SELECT collection_id, COUNT(*)::int AS like_count
+        FROM collection_likes
+        WHERE collection_id = ANY($1::int[])
+        GROUP BY collection_id
+      `, [ids]);
+      const userLikeRows = await db.any(`
+        SELECT collection_id
+        FROM collection_likes
+        WHERE user_id = $1 AND collection_id = ANY($2::int[])
+      `, [sessionUserId, ids]);
       const likeCountMap = new Map(likesRows.map(r => [r.collection_id, r.like_count]));
-      const likedSet     = new Set(userLikeRows.map(r => r.collection_id));
+      const likedSet = new Set(userLikeRows.map(r => r.collection_id));
       photos = photos.map(p => ({
         ...p,
         likeCount: likeCountMap.get(p.collection_id) || 0,
-        isLiked:   likedSet.has(p.collection_id)
+        isLiked: likedSet.has(p.collection_id)
       }));
     }
 
-    // 5) render page
+    if (sort === 'liked') {
+      photos.sort((a, b) => b.likeCount - a.likeCount);
+    } else {
+      photos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
     res.render('pages/collections', {
-      user:         req.session.user,
+      user: req.session.user,
       userViewed,
       isOwner,
       isFollowing,
+      sort,
       photos
     });
-
   } catch (err) {
-    console.error('Error loading collection:', err);
+    console.error(err);
     res.status(500).send('Error loading collection');
   }
 });
+
 
 
 app.post(
