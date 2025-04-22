@@ -812,6 +812,7 @@ app.get('/api/notifications', auth, async (req, res) => {
     const collectionLikes = await db.any(`
       SELECT
         cl.collection_id,
+        c.user_id AS ownerId,
         s.username AS from_user,
         COALESCE(c.description, 'an item') AS collection_description,
         cl.created_at
@@ -820,7 +821,7 @@ app.get('/api/notifications', auth, async (req, res) => {
       JOIN students s ON cl.user_id = s.student_id
       WHERE c.user_id = $1
       ORDER BY cl.created_at DESC
-      LIMIT ${5};
+      LIMIT 5;
     `, [userId]);
     const notifications = [];
     likes.forEach(l => {
@@ -856,7 +857,7 @@ app.get('/api/notifications', auth, async (req, res) => {
     notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     const totalLimit = 10;
     const finalNotifications = notifications.slice(0, totalLimit);
-    res.json({ notifications });
+    res.json({ notifications: finalNotifications });
   } catch (err) {
     console.error('Notification fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch notifications' });
