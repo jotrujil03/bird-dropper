@@ -846,8 +846,11 @@ app.get('/api/notifications', auth, async (req, res) => {
             `${cl.collection_description.substring(0, captionLength)}...` :
             cl.collection_description;
         notifications.push({
+            type: 'collection_like',
             message: `${cl.from_user} liked your collection item "${truncatedDesc}"`,
-            collectionId : cl.collection_id
+            collectionId : cl.collection_id,
+            ownerId: cl.ownerId,
+            created_at: cl.created_at
         });
     });
     notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
