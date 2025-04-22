@@ -809,6 +809,19 @@ app.get('/api/notifications', auth, async (req, res) => {
       ORDER BY c.created_at DESC
       LIMIT 5;
     `, [userId]);
+    const collectionLikes = await db.any(`
+      SELECT
+        cl.collection_id,
+        s.username AS from_user,
+        COALESCE(c.description, 'an item') AS collection_description,
+        cl.created_at
+      FROM collection_likes cl
+      JOIN collections c ON cl.collection_id = c.collection_id
+      JOIN students s ON cl.user_id = s.student_id
+      WHERE c.user_id = $1
+      ORDER BY cl.created_at DESC
+      LIMIT ${limit}; -- Apply limit
+    `, [userId]);
     const notifications = [];
     likes.forEach(l => {
       const truncatedCaption = l.post_caption.length > captionLength ?
