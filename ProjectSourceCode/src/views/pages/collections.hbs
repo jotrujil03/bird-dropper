@@ -1,489 +1,308 @@
 {{> header}}
 
 <style>
-  .photo-wrapper {
-    position: relative;
-    overflow: hidden;
-    height: 300px; /* Adjusted for potential responsiveness */
-    width: 100%; /* Ensure it takes full width of parent */
-  }
-  .photo-wrapper img {
-    display: block; /* Remove extra space below image */
-    width: 100%; /* Make image fill wrapper */
-    height: 100%;
-    object-fit: cover;
-  }
-  .photo-wrapper .overlay {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    opacity: 0; pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity .3s;
-  }
-  .photo-wrapper:hover .overlay {
-    opacity: 1; pointer-events: auto;
-  }
-  .like-collection-btn {
-    background: none;
-    border: none;
-    color: #555;
-    font-size: 1rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    transition: color .3s;
-    padding: 0; /* Remove default button padding */
-  }
-  .like-collection-btn.liked { color: red; }
-  /* Add some spacing for icons */
-  .like-collection-btn i {
-    margin-right: 4px;
-  }
+  .photo-wrapper {
+    position: relative;
+    overflow: hidden;
+    height: 300px;
+  }
+  .photo-wrapper .overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    opacity: 0; pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity .3s;
+  }
+  .photo-wrapper:hover .overlay {
+    opacity: 1; pointer-events: auto;
+  }
+  .like-collection-btn {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: color .3s;
+  }
+  .like-collection-btn.liked { color: red; }
 </style>
-
 <div class="container py-5">
-
-    <div class="row mb-4">
-    <div class="col-12 text-center">
-      <h2 class="display-4 mb-0">{{userViewed.username}}'s Collection</h2>
-    </div>
-  </div>
-
-    <div class="d-flex justify-content-center align-items-center mb-4 gap-3 flex-wrap"> {{! Added flex-wrap for smaller screens }}
-    {{#unless isOwner}}
-      <button id="follow-btn" class="btn btn-primary btn-lg" data-user-id="{{userViewed.id}}">
-        {{#if isFollowing}}Unfollow{{else}}Follow{{/if}}
-      </button>
-    {{/unless}}
-
-    <select id="sortSelect" class="form-select w-auto">
-      <option value="recent">Most Recent</option>
-      <option value="liked">Most Liked</option>
-    </select>
-
-    {{#if isOwner}}
-      <button id="add-photo-btn" class="btn btn-outline-primary btn-lg">
-        <i class="fas fa-upload me-2"></i>Add Bird
-      </button>
-      <input type="file" id="collectionImages" class="d-none" multiple accept="image/*"> {{! Added accept attribute }}
-    {{/if}}
-  </div>
-
-  {{#if error}}
-    <div class="alert alert-danger mb-3">{{error}}</div>
-  {{/if}}
-
-  <div id="upload-collection-status" class="form-text mb-3 text-center"></div>
-
-  <div class="row g-4" id="collection-grid">
-    {{#each photos}}
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="card h-100 shadow-sm">
-
-          <div class="photo-wrapper">
-            <img src="{{this.image_url}}"
-                 class="card-img-top" {{! h-100 removed, wrapper handles height }}
-                 style="object-fit:cover;" {{! style moved to CSS class if possible }}
-                 alt="Collection photo by {{../userViewed.username}}"> {{! More descriptive alt text }}
-
-            {{#if ../isOwner}}
-            <div class="overlay">
-              <button class="btn btn-light edit-desc-btn"
-                      data-id="{{this.collection_id}}"
-                      data-desc="{{this.description}}"
-                      title="Edit description"> {{! Added title }}
-                <i class="fas fa-edit me-1"></i> Edit
-              </button>
-              <button class="btn btn-danger ms-2 delete-collection-btn"
-                      data-id="{{this.collection_id}}"
-                      title="Delete photo">
-                <i class="fas fa-trash"></i> Delete
-              </button>
-            </div>
-            {{/if}}
-          </div>
-
-          <div class="card-body text-center">
-            <button class="like-collection-btn {{#if this.isLiked}}liked{{/if}}"
-                    data-id="{{this.collection_id}}"
-                    title="{{#if this.isLiked}}Unlike{{else}}Like{{/if}} this photo"> {{! Added dynamic title }}
-              <i class="fa fa-heart"></i>
-              <span class="like-count">{{this.likeCount}}</span>
-            </button>
-
-            <p class="card-text desc-text mb-2"
-               data-id="{{this.collection_id}}">
-              {{#if this.description}}
-                {{this.description}}
-              {{else}}
-                <span class="text-muted">No description</span>
-              {{/if}}
-            </p>
-            <small class="text-muted d-block mt-2">{{formatDate this.created_at}}</small>
-          </div>
-
-        </div>
-      </div>
-    {{else}}
-      <div class="col-12">
-        <p class="text-center text-muted">
-          No photos yet.
-          {{#if isOwner}}
-            Click “Add Bird” to get started!
-          {{else}}
-            This user has no photos yet.
-          {{/if}}
-        </p>
-      </div>
-    {{/each}}
-  </div>
+  <!-- Username Heading Centered -->
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h2 class="display-4 mb-0">{{userViewed.username}}'s Collection</h2>
+    </div>
+  </div>
+  <!-- Controls: Follow/Unfollow, Sort, Add Photo -->
+  <div class="d-flex justify-content-center align-items-center mb-4 gap-3">
+    {{#unless isOwner}}
+      <button id="follow-btn" class="btn btn-primary btn-lg" data-user-id="{{userViewed.id}}">
+        {{#if isFollowing}}Unfollow{{else}}Follow{{/if}}
+      </button>
+    {{/unless}}
+    <select id="sortSelect" class="form-select w-auto">
+      <option value="recent">Most Recent</option>
+      <option value="liked">Most Liked</option>
+    </select>
+    {{#if isOwner}}
+      <button id="add-photo-btn" class="btn btn-outline-primary btn-lg">
+        <i class="fas fa-upload me-2"></i>Add Bird
+      </button>
+      <input type="file" id="collectionImages" class="d-none" multiple>
+    {{/if}}
+  </div>
+  {{#if error}}
+    <div class="alert alert-danger mb-3">{{error}}</div>
+  {{/if}}
+  <div id="upload-collection-status" class="form-text mb-3 text-center"></div>
+  <div class="row g-4" id="collection-grid">
+    {{#each photos}}
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+          <div class="photo-wrapper">
+            <img src="{{this.image_url}}"
+                 class="card-img-top h-100"
+                 style="object-fit:cover;"
+                 alt="Photo">
+            {{#if ../isOwner}}
+            <div class="overlay">
+              <button class="btn btn-light edit-desc-btn"
+                      data-id="{{this.collection_id}}"
+                      data-desc="{{this.description}}">
+                <i class="fas fa-edit me-1"></i>
+              </button>
+              <button class="btn btn-danger ms-2 delete-collection-btn"
+                      data-id="{{this.collection_id}}"
+                      title="Delete photo">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+            {{/if}}
+          </div>
+          <div class="card-body text-center">
+            <button class="like-collection-btn {{#if this.isLiked}}liked{{/if}}"
+                    data-id="{{this.collection_id}}">
+              <i class="fa fa-heart"></i>
+              <span class="like-count">{{this.likeCount}}</span>
+            </button>
+            <p class="card-text desc-text mb-2"
+               data-id="{{this.collection_id}}">
+              {{#if this.description}}
+                {{this.description}}
+              {{else}}
+                <span class="text-muted">No description</span>
+              {{/if}}
+            </p>
+            <small class="text-muted d-block mt-2">{{formatDate this.created_at}}</small>
+          </div>
+        </div>
+      </div>
+    {{else}}
+      <div class="col-12">
+        <p class="text-center text-muted">
+          No photos yet.
+          {{#if isOwner}}
+            Click “Add Bird” to get started!
+          {{else}}
+            This user has no photos yet.
+          {{/if}}
+        </p>
+      </div>
+    {{/each}}
+  </div>
 </div>
-
+<!-- Description Modal -->
 <div class="modal fade" id="descModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form id="desc-form" class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Description</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <textarea id="desc-input"
-                  class="form-control"
-                  rows="4"
-                  placeholder="Enter a description..."></textarea>
-      </div>
-      <div class="modal-footer">
-        <button type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save</button>
-      </div>
-    </form>
-  </div>
+  <div class="modal-dialog">
+    <form id="desc-form" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Description</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <textarea id="desc-input"
+                  class="form-control"
+                  rows="4"
+                  placeholder="Enter a description..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
 </div>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // 1) Initialize sortSelect based on server-provided {{sort}}
-  const sortSelect = document.getElementById('sortSelect');
-  // Use JavaScript to get the initial value rendered by Handlebars
-  const initialSortElement = document.querySelector('[data-initial-sort]');
-  const initialSort = initialSortElement ? initialSortElement.dataset.initialSort : '';
-  if (initialSort) {
-    sortSelect.value = initialSort;
-  }
-  // Remove the temporary element after getting the value
-  if (initialSortElement) {
-    initialSortElement.remove();
-  }
-  // Add a hidden element in your HBS to pass the initial sort value safely
-  // <div data-initial-sort="{{sort}}" style="display: none;"></div>
-
-
-  // 2) Handle sort changes
-  sortSelect.addEventListener('change', () => {
-    const params = new URLSearchParams(window.location.search);
-    params.set('sort', sortSelect.value);
-    window.location.search = params.toString();
-  });
-
-  // Follow/Unfollow
-  const followBtn = document.getElementById('follow-btn');
-  if (followBtn) {
-    followBtn.addEventListener('click', async () => {
-      const userId    = followBtn.dataset.userId;
-      const isUnfollow = followBtn.textContent.trim() === 'Unfollow';
-      try {
-        const res = await fetch(`/follow/${userId}`, {
-          method: isUnfollow ? 'DELETE' : 'POST',
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!res.ok) throw new Error('Network response was not ok.'); // More specific error
-        const json = await res.json();
-        if (json.success) {
-          followBtn.textContent = isUnfollow ? 'Follow' : 'Unfollow';
-        } else {
-          // Handle backend reported errors
-          throw new Error(json.error || 'Operation failed.');
-        }
-      } catch (error) { // Catch the specific error object
-        console.error('Follow/Unfollow error:', error); // Log the error
-        alert('Could not update follow status. ' + error.message); // Show error message
-      }
-    });
-  }
-
-  // Add-photo & upload
-  const addBtn    = document.getElementById('add-photo-btn'),
-        fileInput = document.getElementById('collectionImages'),
-        statusDiv = document.getElementById('upload-collection-status'),
-        grid      = document.getElementById('collection-grid');
-
-  // Helper function to create a new card element from photo data
-  function createPhotoCard(photo, isOwner) {
-    const col = document.createElement('div');
-    col.className = 'col-12 col-md-6 col-lg-4';
-    col.innerHTML = `
-        <div class="card h-100 shadow-sm">
-          <div class="photo-wrapper">
-            <img src="${photo.image_url}" class="card-img-top" alt="Collection photo">
-            ${isOwner ? `
-            <div class="overlay">
-              <button class="btn btn-light edit-desc-btn" data-id="${photo.collection_id}" data-desc="" title="Edit description">
-                <i class="fas fa-edit me-1"></i> Edit
-              </button>
-              <button class="btn btn-danger ms-2 delete-collection-btn" data-id="${photo.collection_id}" title="Delete photo">
-                <i class="fas fa-trash"></i> Delete
-              </button>
-            </div>
-            ` : ''}
-          </div>
-          <div class="card-body text-center">
-            <button class="like-collection-btn ${photo.isLiked ? 'liked' : ''}" data-id="${photo.collection_id}" title="${photo.isLiked ? 'Unlike' : 'Like'} this photo">
-              <i class="fa fa-heart"></i><span class="like-count">${photo.likeCount || 0}</span>
-            </button>
-            <p class="card-text desc-text mb-2" data-id="${photo.collection_id}">
-              ${photo.description || '<span class="text-muted">No description</span>'}
-            </p>
-            <small class="text-muted d-block mt-2">${photo.created_at ? new Date(photo.created_at).toLocaleDateString() : 'Just now'}</small> {{! Format date }}
-          </div>
-        </div>`;
-    return col;
-  }
-
-
-  if (addBtn && fileInput) {
-    addBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', async () => {
-      const files = Array.from(fileInput.files);
-      if (!files.length) return;
-      statusDiv.textContent = `Uploading ${files.length} file(s)...`;
-      const fd = new FormData();
-      files.forEach(f => fd.append('collectionImages', f));
-      try {
-        const res = await fetch('/collections/upload', {
-          method: 'POST',
-          body: fd,
-          credentials: 'same-origin'
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        // If the grid was empty, remove the "No photos yet" message
-        if (grid.querySelector('.col-12 p.text-center')) {
-          grid.innerHTML = '';
-        }
-
-        data.photos.forEach(photo => {
-          const col = createPhotoCard(photo, true); // Assuming uploaded photos belong to the owner
-          grid.prepend(col); // Add new photos to the beginning
-        });
-
-        statusDiv.textContent = `Upload successful! Added ${data.photos.length} photo(s).`;
-        fileInput.value = ''; // Clear the input
-
-        // Optional: Briefly show success and then clear
-        setTimeout(() => { statusDiv.textContent = ''; }, 5000);
-
-      } catch (err) {
-        console.error('Upload failed:', err);
-        statusDiv.textContent = 'Upload failed: ' + err.message;
-        fileInput.value = ''; // Clear the input even on failure
-      }
-    });
-  }
-
-  // Edit description
-  let currentId;
-  const descModalEl = document.getElementById('descModal');
-  const descModal = new bootstrap.Modal(descModalEl);
-  const descInput = document.getElementById('desc-input');
-  const descForm = document.getElementById('desc-form');
-
-  document.body.addEventListener('click', e => {
-    const btn = e.target.closest('.edit-desc-btn');
-    if (!btn) return;
-    currentId = btn.dataset.id;
-    descInput.value = btn.dataset.desc || '';
-    descModal.show();
-  });
-
-  descForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const desc = descInput.value.trim();
-    try {
-      const res = await fetch(`/collections/description/${currentId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: desc }),
-        credentials: 'same-origin'
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error);
-
-      // Update the description text on the card
-      const p = document.querySelector(`.card-text.desc-text[data-id="${currentId}"]`);
-      p.innerHTML = desc || '<span class="text-muted">No description</span>'; // Use innerHTML for the span
-      // Update the data-desc attribute on the edit button for next time
-      document.querySelector(`.edit-desc-btn[data-id="${currentId}"]`).dataset.desc = desc;
-
-      descModal.hide();
-
-    } catch (error) {
-      console.error('Description save failed:', error);
-      alert('Could not save description. ' + error.message);
-    }
-  });
-
-  // Delete photo
-  document.body.addEventListener('click', async e => {
-    const btn = e.target.closest('.delete-collection-btn');
-    if (!btn) return;
-    if (!confirm('Are you sure you want to delete this photo?')) return; // More user-friendly confirmation
-
-    const itemId = btn.dataset.id;
-
-    try {
-      const res = await fetch(`/collections/delete/${itemId}`, {
-        method: 'POST', // Or DELETE, depending on your backend convention
-        credentials: 'same-origin',
-        headers: { 'Accept': 'application/json' }
-      });
-
-      if (!res.ok) throw new Error('Network response was not ok.');
-      const json = await res.json();
-
-      if (!json.success) throw new Error(json.error || 'Delete operation failed.');
-
-      // Remove the card element from the DOM
-      btn.closest('.col-12').remove();
-
-      // Optional: If the grid is now empty, show the "No photos yet" message
-      if (!grid.querySelector('.col-12')) {
-        const noPhotosMessage = `
-          <div class="col-12">
-            <p class="text-center text-muted">
-              No photos yet.
-              {{#if isOwner}}Click “Add Bird” to get started!{{else}}This user has no photos yet.{{/if}}
-            </p>
-          </div>`;
-        grid.innerHTML = noPhotosMessage;
-        // Note: This hardcoded HBS template snippet won't work directly in pure JS.
-        // You'd need the `isOwner` value available in JS or handle this differently.
-        // A simpler fallback might just be a generic "No photos yet."
-      }
-
-
-    } catch (error) {
-      console.error('Delete failed:', error);
-      alert('Could not delete photo. ' + error.message);
-    }
-  });
-
-
-  // Like / Unlike
-  document.body.addEventListener('click', async e => {
-    const btn = e.target.closest('.like-collection-btn');
-    if (!btn) return;
-
-    const itemId = btn.dataset.id;
-    // Determine current state to update title optimistically or revert on failure
-    const isCurrentlyLiked = btn.classList.contains('liked');
-
-    // Optimistic UI Update (Optional but good for perceived speed)
-    // const likeCountSpan = btn.querySelector('.like-count');
-    // let currentLikeCount = parseInt(likeCountSpan.textContent, 10);
-    // if (isCurrentlyLiked) {
-    //  btn.classList.remove('liked');
-    //  likeCountSpan.textContent = currentLikeCount > 0 ? currentLikeCount - 1 : 0;
-    //  btn.title = 'Like this photo';
-    // } else {
-    //  btn.classList.add('liked');
-    //  likeCountSpan.textContent = currentLikeCount + 1;
-    //  btn.title = 'Unlike this photo';
-    // }
-
-
-    try {
-      const res = await fetch(`/like-collection/${itemId}`, {
-        method: 'POST', // Assuming POST is used for both like/unlike toggling
-        credentials: 'same-origin',
-        headers: { 'Accept': 'application/json' }
-      });
-
-      if (!res.ok) throw new Error('Network response was not ok.');
-      const json = await res.json();
-
-      if (!json.success) throw new Error(json.error || 'Like operation failed.');
-
-      // Update UI based on the *actual* state returned from the server
-      btn.classList.toggle('liked', json.isLiked);
-      btn.querySelector('.like-count').textContent = json.likeCount;
-      btn.title = json.isLiked ? 'Unlike this photo' : 'Like this photo';
-
-
-      // === ADD CLIENT-SIDE NOTIFICATION LOGIC HERE ===
-      // This triggers a browser notification FOR THE USER who just liked it.
-      // To notify the collection OWNER, you need backend logic.
-      if (json.isLiked) { // Check if the action resulted in a "like"
-        // Request permission if not already granted or denied
-        if (Notification.permission === "granted") {
-          // You could fetch more details here if needed for the notification body
-          new Notification("Collection Liked!", {
-            body: "You successfully liked a photo in this collection."
-            // icon: '/path/to/an/icon.png' // Optional: Add an icon
-          });
-        } else if (Notification.permission !== "denied") {
-          // Ask for permission
-          Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-              new Notification("Collection Liked!", {
-                body: "You successfully granted notification permission and liked the photo."
-              });
-            }
-          });
-        }
-
-        // You could also add code here to trigger an update in a separate
-        // notification display component on the page, if you have one.
-        // E.g., Dispatch a custom event:
-        // document.dispatchEvent(new CustomEvent('collectionLiked', { detail: { itemId: itemId, likerId: yourUserId } }));
-      }
-      // =========================================
-
-
-    } catch (error) { // Catch the specific error object
-      console.error('Like failed:', error); // Log the error
-      alert('Could not update like. ' + error.message); // Show error message
-      // If you implemented optimistic UI, you'd revert it here
-      // if (isCurrentlyLiked) {
-      //  btn.classList.add('liked');
-      //  likeCountSpan.textContent = currentLikeCount;
-      //  btn.title = 'Unlike this photo';
-      // } else {
-      //  btn.classList.remove('liked');
-      //  likeCountSpan.textContent = currentLikeCount;
-      //  btn.title = 'Like this photo';
-      // }
-    }
-  });
+  // 1) Initialize sortSelect based on server-provided {{sort}}
+  const sortSelect = document.getElementById('sortSelect');
+  const initialSort = '{{sort}}';
+  if (initialSort) {
+    sortSelect.value = initialSort;
+  }
+  // 2) Handle sort changes
+  sortSelect.addEventListener('change', () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('sort', sortSelect.value);
+    window.location.search = params.toString();
+  });
+  // Follow/Unfollow
+  const followBtn = document.getElementById('follow-btn');
+  if (followBtn) {
+    followBtn.addEventListener('click', async () => {
+      const userId    = followBtn.dataset.userId;
+      const isUnfollow = followBtn.textContent.trim() === 'Unfollow';
+      try {
+        const res = await fetch(`/follow/${userId}`, {
+          method: isUnfollow ? 'DELETE' : 'POST',
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        if (json.success) {
+          followBtn.textContent = isUnfollow ? 'Follow' : 'Unfollow';
+        } else throw new Error();
+      } catch {
+        alert('Could not update follow status.');
+      }
+    });
+  }
+  // Add-photo & upload
+  const addBtn    = document.getElementById('add-photo-btn'),
+        fileInput = document.getElementById('collectionImages'),
+        statusDiv = document.getElementById('upload-collection-status'),
+        grid      = document.getElementById('collection-grid');
+  if (addBtn && fileInput) {
+    addBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async () => {
+      const files = Array.from(fileInput.files);
+      if (!files.length) return;
+      statusDiv.textContent = 'Uploading…';
+      const fd = new FormData();
+      files.forEach(f => fd.append('collectionImages', f));
+      try {
+        const res = await fetch('/collections/upload', {
+          method: 'POST',
+          body: fd,
+          credentials: 'same-origin'
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        data.photos.forEach(photo => {
+          const col = document.createElement('div');
+          col.className = 'col-12 col-md-6 col-lg-4';
+          col.innerHTML = `
+            <div class="card h-100 shadow-sm">
+              <div class="photo-wrapper">
+                <img src="${photo.image_url}" class="card-img-top h-100" style="object-fit:cover;" alt="Photo">
+                <div class="overlay">
+                  <button class="btn btn-light edit-desc-btn" data-id="${photo.collection_id}" data-desc="">
+                    <i class="fas fa-edit me-1"></i>
+                  </button>
+                  <button class="btn btn-danger ms-2 delete-collection-btn" data-id="${photo.collection_id}" title="Delete photo">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body text-center">
+                <button class="like-collection-btn" data-id="${photo.collection_id}">
+                  <i class="fa fa-heart"></i><span class="like-count">0</span>
+                </button>
+                <p class="card-text desc-text mb-2" data-id="${photo.collection_id}">
+                  <span class="text-muted">No description</span>
+                </p>
+                <small class="text-muted d-block mt-2">Just now</small>
+              </div>
+            </div>`;
+          grid.prepend(col);
+        });
+        statusDiv.textContent = 'Upload successful!';
+        fileInput.value = '';
+      } catch (err) {
+        console.error(err);
+        statusDiv.textContent = 'Upload failed: ' + err.message;
+      }
+    });
+  }
+  // Edit description
+  let currentId;
+  const descModal = new bootstrap.Modal(document.getElementById('descModal'));
+  document.body.addEventListener('click', e => {
+    const btn = e.target.closest('.edit-desc-btn');
+    if (!btn) return;
+    currentId = btn.dataset.id;
+    document.getElementById('desc-input').value = btn.dataset.desc || '';
+    descModal.show();
+  });
+  document.getElementById('desc-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const desc = document.getElementById('desc-input').value.trim();
+    try {
+      const res = await fetch(`/collections/description/${currentId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc }),
+        credentials: 'same-origin'
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      const p = document.querySelector(`.desc-text[data-id="${currentId}"]`);
+      p.textContent = desc || 'No description';
+      document.querySelector(`.edit-desc-btn[data-id="${currentId}"]`).dataset.desc = desc;
+      descModal.hide();
+    } catch {
+      alert('Could not save description.');
+    }
+  });
+  // Delete photo
+  document.body.addEventListener('click', async e => {
+    const btn = e.target.closest('.delete-collection-btn');
+    if (!btn) return;
+    if (!confirm('Delete this photo?')) return;
+    try {
+      const res = await fetch(`/collections/delete/${btn.dataset.id}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      btn.closest('.col-12').remove();
+    } catch {
+      alert('Could not delete photo.');
+    }
+  });
+  // Like / Unlike
+  document.body.addEventListener('click', async e => {
+    const btn = e.target.closest('.like-collection-btn');
+    if (!btn) return;
+    try {
+      const res = await fetch(`/like-collection/${btn.dataset.id}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      btn.dataset.liked = json.isLiked;
+      btn.querySelector('.like-count').textContent = json.likeCount;
+      btn.classList.toggle('liked', json.isLiked);
+    } catch {
+      alert('Could not update like.');
+    }
+  });
 });
-
-// Helper to format date - ensure this helper is available in your HBS setup
-// function formatDate(dateString) {
-//  if (!dateString) return '';
-//  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-//  return new Date(dateString).toLocaleDateString(undefined, options);
-// }
 </script>
-
-{{! Temporary element to pass initial sort value }}
-<div data-initial-sort="{{sort}}" style="display: none;"></div>
-
 {{> footer}}
