@@ -820,7 +820,7 @@ app.get('/api/notifications', auth, async (req, res) => {
       JOIN students s ON cl.user_id = s.student_id
       WHERE c.user_id = $1
       ORDER BY cl.created_at DESC
-      LIMIT ${limit}; -- Apply limit
+      LIMIT ${5};
     `, [userId]);
     const notifications = [];
     likes.forEach(l => {
