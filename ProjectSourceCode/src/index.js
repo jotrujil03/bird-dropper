@@ -791,18 +791,27 @@ app.get('/api/notifications', auth, async (req, res) => {
   const captionLength = 20; // Adjust this as needed
 
   try {
-    const likes = await db.any(`
+    const collectionLikes = await db.any(`
+      SELECT n.reference_id AS collection_id, s.username AS from_user, c.description AS collection_description
+      FROM notifications n
+      JOIN students s ON n.sender_id = s.student_id
+      JOIN collections c ON n.reference_id = c.collection_id
+      WHERE n.recipient_id = $1 AND n.type = 'collection_like'
+      ORDER BY n.created_at DESC
+      LIMIT 5;
+    `, [userId]);
+    const postLikes = await db.any(`
       SELECT l.post_id, s.username AS from_user, p.caption AS post_caption
-      FROM likes l
+      FROM postLikes l
       JOIN posts p ON l.post_id = p.post_id
       JOIN students s ON l.user_id = s.student_id
       WHERE p.user_id = $1
       ORDER BY l.created_at DESC
       LIMIT 5;
     `, [userId]);
-    const comments = await db.any(`
+    const postComments = await db.any(`
       SELECT c.post_id, s.username AS from_user, p.caption AS post_caption, c.comment AS comment_text
-      FROM comments c
+      FROM postComments c
       JOIN posts p ON c.post_id = p.post_id
       JOIN students s ON c.user_id = s.student_id
       WHERE p.user_id = $1
@@ -810,7 +819,7 @@ app.get('/api/notifications', auth, async (req, res) => {
       LIMIT 5;
     `, [userId]);
     const notifications = [];
-    likes.forEach(l => {
+    postLikes.forEach(l => {
       const truncatedCaption = l.post_caption.length > captionLength ?
         `${l.post_caption.substring(0, captionLength)}...` :
         l.post_caption;
@@ -819,7 +828,7 @@ app.get('/api/notifications', auth, async (req, res) => {
         postId : l.post_id
       });
     });
-    comments.forEach(c => {
+    postComments.forEach(c => {
       const truncatedCaption = c.post_caption.length > captionLength ?
         `${c.post_caption.substring(0, captionLength)}...` :
         c.post_caption;
@@ -829,6 +838,15 @@ app.get('/api/notifications', auth, async (req, res) => {
       notifications.push({
         message: `${c.from_user} commented on your post "${truncatedCaption}": "${truncatedComment}"`,
         postId : c.post_id
+      });
+    });
+    collectionLikes.forEach(cl => {
+      const truncatedDesc = cl.collection_description && cl.collection_description.length > captionLength ?
+        `${cl.collection_description.substring(0, captionLength)}...` :
+        (cl.collection_description || 'an item'); // Use 'an item' if no description
+      notifications.push({
+        message: `${cl.from_user} liked your collection item "${truncatedDesc}"`,
+        collectionId : cl.collection_id // Use collectionId or a generic itemId field
       });
     });
     res.json({ notifications });
