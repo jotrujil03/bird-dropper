@@ -787,73 +787,106 @@ app.post('/like-collection/:id', auth, async (req, res) => {
 //          NOTIFICATIONS API  (likes/comments)
 // ────────────────────────────────────────────────
 app.get('/api/notifications', auth, async (req, res) => {
-  const userId = req.session.user.id;
-  const captionLength = 20; // Adjust this as needed
+  const userId = req.session.user.id;
+  const captionLength = 20; // Adjust this as needed
+  const limit = 5; // Limit for each type, or calculate total limit
 
-  try {
-    const collectionLikes = await db.any(`
-      SELECT n.reference_id AS collection_id, s.username AS from_user, c.description AS collection_description
-      FROM notifications n
-      JOIN students s ON n.sender_id = s.student_id
-      JOIN collections c ON n.reference_id = c.collection_id
-      WHERE n.recipient_id = $1 AND n.type = 'collection_like'
-      ORDER BY n.created_at DESC
-      LIMIT 5;
-    `, [userId]);
-    const postLikes = await db.any(`
-      SELECT l.post_id, s.username AS from_user, p.caption AS post_caption
-      FROM postLikes l
-      JOIN posts p ON l.post_id = p.post_id
-      JOIN students s ON l.user_id = s.student_id
-      WHERE p.user_id = $1
-      ORDER BY l.created_at DESC
-      LIMIT 5;
-    `, [userId]);
-    const postComments = await db.any(`
-      SELECT c.post_id, s.username AS from_user, p.caption AS post_caption, c.comment AS comment_text
-      FROM postComments c
-      JOIN posts p ON c.post_id = p.post_id
-      JOIN students s ON c.user_id = s.student_id
-      WHERE p.user_id = $1
-      ORDER BY c.created_at DESC
-      LIMIT 5;
-    `, [userId]);
-    const notifications = [];
-    postLikes.forEach(l => {
-      const truncatedCaption = l.post_caption.length > captionLength ?
-        `${l.post_caption.substring(0, captionLength)}...` :
-        l.post_caption;
-      notifications.push({
-        message: `${l.from_user} liked your post "${truncatedCaption}"`,
-        postId : l.post_id
-      });
+  try {
+    const likes = await db.any(`
+      SELECT
+        l.post_id,
+        s.username AS from_user,
+        p.caption AS post_caption,
+        l.created_at -- Fetch created_at for sorting
+      FROM likes l
+      JOIN posts p ON l.post_id = p.post_id
+      JOIN students s ON l.user_id = s.student_id
+      WHERE p.user_id = $1
+      ORDER BY l.created_at DESC
+      LIMIT ${limit}; -- Apply limit
+    `, [userId]);
+
+    const comments = await db.any(`
+      SELECT
+        c.post_id,
+        s.username AS from_user,
+        p.caption AS post_caption,
+        c.comment AS comment_text,
+        c.created_at -- Fetch created_at for sorting
+      FROM comments c
+      JOIN posts p ON c.post_id = p.post_id
+      JOIN students s ON c.user_id = s.student_id
+      WHERE p.user_id = $1
+      ORDER BY c.created_at DESC
+      LIMIT ${limit}; -- Apply limit
+    `, [userId]);
+
+    const collectionLikes = await db.any(`
+      SELECT
+        cl.collection_id,
+        s.username AS from_user,
+        COALESCE(c.description, 'an item') AS collection_description, -- Use description or default
+        cl.created_at -- Fetch created_at for sorting
+      FROM collection_likes cl
+      JOIN collections c ON cl.collection_id = c.collection_id
+      JOIN students s ON cl.user_id = s.student_id
+      WHERE c.user_id = $1
+      ORDER BY cl.created_at DESC
+      LIMIT ${limit}; -- Apply limit
+    `, [userId]);
+
+
+    const notifications = [];
+
+    likes.forEach(l => {
+      const truncatedCaption = l.post_caption.length > captionLength ?
+        `${l.post_caption.substring(0, captionLength)}...` :
+        l.post_caption;
+      notifications.push({
+        type: 'post_like', // Add a type for clarity
+        message: `${l.from_user} liked your post "${truncatedCaption}"`,
+        postId : l.post_id,
+        created_at: l.created_at // Include timestamp for sorting
+      });
+    });
+
+    comments.forEach(c => {
+      const truncatedCaption = c.post_caption.length > captionLength ?
+        `${c.post_caption.substring(0, captionLength)}...` :
+        c.post_caption;
+      const truncatedComment = c.comment_text.length > captionLength ?
+        `${c.comment_text.substring(0, captionLength)}...` :
+        c.comment_text;
+      notifications.push({
+        type: 'comment', // Add a type for clarity
+        message: `${c.from_user} commented on your post "${truncatedCaption}": "${truncatedComment}"`,
+        postId : c.post_id,
+        created_at: c.created_at // Include timestamp for sorting
+      });
+    });
+
+    collectionLikes.forEach(cl => {
+        const truncatedDesc = cl.collection_description.length > captionLength ?
+            `${cl.collection_description.substring(0, captionLength)}...` :
+            cl.collection_description;
+        notifications.push({
+            type: 'collection_like', // Add a type for clarity
+            message: `${cl.from_user} liked your collection item "${truncatedDesc}"`,
+            collectionId : cl.collection_id, // Use collectionId
+            created_at: cl.created_at // Include timestamp for sorting
+        });
     });
-    postComments.forEach(c => {
-      const truncatedCaption = c.post_caption.length > captionLength ?
-        `${c.post_caption.substring(0, captionLength)}...` :
-        c.post_caption;
-      const truncatedComment = c.comment_text.length > captionLength ?
-        `${c.comment_text.substring(0, captionLength)}...` :
-        c.comment_text;
-      notifications.push({
-        message: `${c.from_user} commented on your post "${truncatedCaption}": "${truncatedComment}"`,
-        postId : c.post_id
-      });
-    });
-    collectionLikes.forEach(cl => {
-      const truncatedDesc = cl.collection_description && cl.collection_description.length > captionLength ?
-        `${cl.collection_description.substring(0, captionLength)}...` :
-        (cl.collection_description || 'an item'); // Use 'an item' if no description
-      notifications.push({
-        message: `${cl.from_user} liked your collection item "${truncatedDesc}"`,
-        collectionId : cl.collection_id // Use collectionId or a generic itemId field
-      });
-    });
-    res.json({ notifications });
-  } catch (err) {
-    console.error('Notification fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch notifications' });
-  }
+
+    notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const totalLimit = 10;
+    const finalNotifications = notifications.slice(0, totalLimit);
+    res.json({ notifications });
+
+  } catch (err) {
+    console.error('Notification fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
 });
 
 // ────────────────────────────────────────────────
