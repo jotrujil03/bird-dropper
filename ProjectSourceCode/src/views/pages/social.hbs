@@ -586,7 +586,9 @@
           } else {
             searchResults.innerHTML = list.map(u => `
               <div class="search-result" data-user-id="${u.id}">
-                <span>${u.username}</span>
+                <a href="/collections/${u.id}" class="search-result-link">
+                  <span>${u.username}</span>
+                </a>
                 <button class="follow-btn ${u.isFollowing ? 'following' : ''}"
                         data-following="${u.isFollowing}">
                   ${u.isFollowing ? 'Unfollow' : 'Follow'}
