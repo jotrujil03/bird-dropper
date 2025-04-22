@@ -2,41 +2,43 @@
   <div class="p-3 text-center bg-white border-bottom">
     <div class="container-fluid">
       <div class="row align-items-center">
+
+        <!-- Left nav -->
         <div class="col-6 col-md-5 d-flex justify-content-start align-items-center">
-          <a class="text-reset me-3" href="/about" style="font-size: 1.2em; height: 40px; line-height: 40px; display: inline-block; text-decoration: none;">
+          <a href="/about" class="header-link">
             About
           </a>
-          <a class="text-reset me-3" href="/social" style="font-size: 1.2em; height: 40px; line-height: 40px; display: inline-block; text-decoration: none;">
+          <a href="/social" class="header-link">
             Social
           </a>
-          <a href="/fact-of-the-day" class="btn btn-info ms-2">
+          <!-- Party glow Fact of the Day button -->
+          <a href="/fact-of-the-day" class="header-link fact-button">
             <i class="fas fa-lightbulb"></i> Fact of the Day
           </a>
-
-
         </div>
 
+        <!-- Logo center -->
         <div class="col-6 col-md-2 text-center">
-          <a href="/" class="ms-md-2" style="text-decoration: none; color: #000; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; font-size: 1.5em; line-height: 40px; font-weight: bolder;">
-            <i class="fas fa-dove" style="font-size: 25px; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+          <a href="/" class="logo-link">
+            <i class="fas fa-dove"></i>
           </a>
         </div>
 
+        <!-- Right nav -->
         <div class="col-12 col-md-5 d-flex justify-content-end align-items-center">
-          <a class="text-reset me-3" href="/settings">
-            <i class="fas fa-cog" title="Settings" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+          <a href="/settings" class="icon-link">
+            <i class="fas fa-cog" title="Settings"></i>
           </a>
 
           <div class="dropdown">
-            <a class="text-reset me-3" href="/notifications" id="navbarDropdownMenuLink" role="button" data-mdb-dropdown-init aria-expanded="false">
-              <i class="fas fa-bell" title="Notifications" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;">
-                {{#if notifications.length}}
-                  <span class="position-absolute top-50 start-10 translate-middle badge rounded-pill bg-danger">
-                    {{notifications.length}}
-                    <span class="visually-hidden">unread messages</span>
-                  </span>
-                {{/if}}
-              </i>
+            <a href="/notifications" class="icon-link position-relative" id="navbarDropdownMenuLink" role="button" data-mdb-dropdown-init aria-expanded="false">
+              <i class="fas fa-bell" title="Notifications"></i>
+              {{#if notifications.length}}
+                <span class="badge-count">
+                  {{notifications.length}}
+                  <span class="visually-hidden">unread messages</span>
+                </span>
+              {{/if}}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
               {{#if notifications.length}}
@@ -48,18 +50,19 @@
               {{/if}}
             </ul>
           </div>
-         <div class="dropdown">
-            <a class="text-reset dropdown-toggle d-flex align-items-center hidden-arrow" href="#" id="userDropdown" role="button" data-mdb-dropdown-init aria-expanded="false">
+
+          <div class="dropdown">
+            <a href="#" class="icon-link dropdown-toggle d-flex align-items-center hidden-arrow" id="userDropdown" role="button" data-mdb-dropdown-init aria-expanded="false">
               {{#if user.profileImage}}
-                <img src="{{user.profileImage}}" class="rounded-circle shadow-sm" title="User" style="width: 40px; height: 40px; object-fit: cover;">
+                <img src="{{user.profileImage}}" class="user-avatar" title="User">
               {{else}}
-                <i class="fas fa-user rounded-circle" title="User" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
+                <i class="fas fa-user user-icon" title="User"></i>
               {{/if}}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
               {{#if user}}
                 <li><a class="dropdown-item" href="/collections">Collections</a></li>
-                 <li><a class="dropdown-item" href="/following">Following</a></li>
+                <li><a class="dropdown-item" href="/following">Following</a></li>
               {{/if}}
               <li><a class="dropdown-item" href="/profile">My profile</a></li>
               <li><a class="dropdown-item" href="/settings">Settings</a></li>
@@ -71,27 +74,135 @@
             </ul>
           </div>
         </div>
+
       </div>
     </div>
   </div>
 </header>
 
 <style>
-  .navbar-dark .nav-item .nav-link {
-    color: #000;
-  }
+  /* Core font import */
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&display=swap');
 
-  .navbar-dark .nav-item .nav-link:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+  /* Shared link styles */
+  .header-link {
+    font-size: 1.2em;
+    height: 40px;
+    line-height: 40px;
+    display: inline-block;
+    margin-right: 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.2s ease;
     border-radius: 0.25rem;
-    color: #000000;
+  }
+  .header-link:last-of-type {
+    margin-right: 0;
+  }
+  .header-link:hover {
+    background-color: rgba(0,0,0,0.05);
   }
 
-  .fa-bell + .badge.bg-danger {
-  position: absolute;
-  top: 0.3em; /* Adjust this value to move it up or down */
-  right: 0.1em; /* Adjust this value to move it left or right */
-  transform: translate(100%, -100%); /* Keep this for centering */
+  /* Fact-button base style */
+  .fact-button {
+    font-family: 'Poppins', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    font-size: 1.1em;
+    font-weight: 600;
+    background-color: #0d6efd;
+    color: #fff;
+    text-decoration: none;
+    border: none;
+    border-radius: 0.5rem;
+    position: relative;
+    z-index: 0;
+    box-shadow: 0 0 8px rgba(13,110,253,0.6);
+    transition: box-shadow 0.3s ease;
   }
+  .fact-button .fas {
+    margin-right: 0.5rem;
+    font-size: 1.2em;
+  }
+
+  /* Rainbow wave outer glow */
+  .fact-button::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    border-radius: 0.5rem;
+    background: linear-gradient(90deg,
+      #ff0000, #ff7f00, #ffff00, #00ff00, #00ffff, #0000ff, #bf00ff, #ff0000);
+    background-size: 800% 100%;
+    filter: blur(12px);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: -1;
+  }
+  @keyframes glowWave {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+  .fact-button:hover::before {
+    opacity: 1;
+    animation: glowWave 1.4s linear infinite;
+  }
+  .fact-button:active::before {
+    animation-play-state: paused;
+    opacity: 1;
+  }
+
+  /* Logo styling */
+  .logo-link {
+    text-decoration: none;
+    color: #000;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+  .logo-link .fas {
+    font-size: 25px;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+  }
+
+  /* Icon links */
+  .icon-link {
+    margin-right: 1rem;
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+  }
+  .icon-link:last-of-type { margin-right: 0; }
+  .icon-link .fas {
+    font-size: 2em;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+  }
+
+  /* Notification badge */
+  .badge-count {
+    position: absolute;
+    top: 0.3em;
+    right: 0.1em;
+    transform: translate(100%, -100%);
+    background-color: #dc3545;
+    color: #fff;
+    border-radius: 50%;
+    padding: 0.25em 0.5em;
+    font-size: 0.75em;
+  }
+
+  /* User avatar / icon */
+  .user-avatar { width: 40px; height: 40px; border-radius: 50%; }
+  .user-icon { font-size: 2em; width: 40px; height: 40px; line-height: 40px; text-align: center; }
 </style>
