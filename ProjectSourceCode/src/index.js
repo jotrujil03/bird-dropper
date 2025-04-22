@@ -844,6 +844,20 @@ app.get('/api/notifications', auth, async (req, res) => {
         postId : c.post_id
       });
     });
+    collectionLikes.forEach(cl => {
+        const truncatedDesc = cl.collection_description.length > captionLength ?
+            `${cl.collection_description.substring(0, captionLength)}...` :
+            cl.collection_description;
+        notifications.push({
+            type: 'collection_like', // Add a type for clarity
+            message: `${cl.from_user} liked your collection item "${truncatedDesc}"`,
+            collectionId : cl.collection_id, // Use collectionId
+            created_at: cl.created_at // Include timestamp for sorting
+        });
+    });
+    notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const totalLimit = 10;
+    const finalNotifications = notifications.slice(0, totalLimit);
     res.json({ notifications });
   } catch (err) {
     console.error('Notification fetch error:', err);
