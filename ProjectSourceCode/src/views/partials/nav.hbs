@@ -1,7 +1,9 @@
+<!-- Header Partial (nav) -->
 <header>
   <div class="p-3 text-center bg-white border-bottom">
     <div class="container-fluid">
       <div class="row align-items-center">
+        <!-- Left Links -->
         <div class="col-6 col-md-5 d-flex justify-content-start align-items-center">
           <a class="text-reset me-3" href="/about" style="font-size: 1.2em; height: 40px; line-height: 40px; display: inline-block; text-decoration: none;">
             About
@@ -9,24 +11,26 @@
           <a class="text-reset me-3" href="/social" style="font-size: 1.2em; height: 40px; line-height: 40px; display: inline-block; text-decoration: none;">
             Social
           </a>
-          <a href="/fact-of-the-day" class="btn btn-info ms-2">
-            <i class="fas fa-lightbulb"></i> Fact of the Day
+          <a href="/fact-of-the-day" class="fact-btn text-reset me-3">
+            <i class="fas fa-lightbulb me-1"></i> Fact of the Day
           </a>
-
-
         </div>
 
+        <!-- Center Logo -->
         <div class="col-6 col-md-2 text-center">
           <a href="/" class="ms-md-2" style="text-decoration: none; color: #000; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; font-size: 1.5em; line-height: 40px; font-weight: bolder;">
             <i class="fas fa-dove" style="font-size: 25px; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
           </a>
         </div>
 
+        <!-- Right Icons -->
         <div class="col-12 col-md-5 d-flex justify-content-end align-items-center">
+          <!-- Settings -->
           <a class="text-reset me-3" href="/settings">
             <i class="fas fa-cog" title="Settings" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;"></i>
           </a>
 
+          <!-- Notifications -->
           <div class="dropdown">
             <a class="text-reset me-3" href="/notifications" id="navbarDropdownMenuLink" role="button" data-mdb-dropdown-init aria-expanded="false">
               <i class="fas fa-bell" title="Notifications" style="font-size: 2em; height: 40px; width: 40px; line-height: 40px; text-align: center;">
@@ -48,7 +52,9 @@
               {{/if}}
             </ul>
           </div>
-         <div class="dropdown">
+
+          <!-- User Menu -->
+          <div class="dropdown">
             <a class="text-reset dropdown-toggle d-flex align-items-center hidden-arrow" href="#" id="userDropdown" role="button" data-mdb-dropdown-init aria-expanded="false">
               {{#if user.profileImage}}
                 <img src="{{user.profileImage}}" class="rounded-circle shadow-sm" title="User" style="width: 40px; height: 40px; object-fit: cover;">
@@ -59,7 +65,7 @@
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
               {{#if user}}
                 <li><a class="dropdown-item" href="/collections">Collections</a></li>
-                 <li><a class="dropdown-item" href="/following">Following</a></li>
+                <li><a class="dropdown-item" href="/following">Following</a></li>
               {{/if}}
               <li><a class="dropdown-item" href="/profile">My profile</a></li>
               <li><a class="dropdown-item" href="/settings">Settings</a></li>
@@ -76,22 +82,65 @@
   </div>
 </header>
 
+<!-- Styles -->
 <style>
+  /* Navbar link overrides */
   .navbar-dark .nav-item .nav-link {
     color: #000;
   }
-
   .navbar-dark .nav-item .nav-link:hover {
     background-color: rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     border-radius: 0.25rem;
-    color: #000000;
+    color: #000;
   }
 
+  /* Notification badge positioning */
   .fa-bell + .badge.bg-danger {
-  position: absolute;
-  top: 0.3em; /* Adjust this value to move it up or down */
-  right: 0.1em; /* Adjust this value to move it left or right */
-  transform: translate(100%, -100%); /* Keep this for centering */
+    position: absolute;
+    top: 0.3em;   /* move up/down */
+    right: 0.1em; /* move left/right */
+    transform: translate(100%, -100%);
+  }
+
+  /* Fact of the Day button (updated to Bootstrap blue) */
+  .fact-btn {
+    font-size: 1.2em;
+    height: 40px;
+    line-height: 40px;
+    display: inline-block;
+    padding: 0 15px;
+    border-radius: 20px;
+    background-color: #0d6efd;      /* Bootstrap primary */
+    color: #fff !important;         /* white text */
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    text-decoration: none;
+  }
+  .fact-btn:hover {
+    background-color: #0b5ed7;      /* darker blue on hover */
+    transform: scale(1.05);
+    color: #fff !important;
+  }
+
+  /* Card font sizing */
+  .card-body,
+  .card-footer,
+  .card-header {
+    font-size: 1.1rem;
+  }
+
+  /* Form control sizing */
+  .form-control {
+    font-size: 1rem;
+  }
+
+  /* Base font */
+  body,
+  input,
+  button {
+    font-family: 'Roboto', sans-serif;
   }
 </style>

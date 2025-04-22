@@ -213,6 +213,18 @@
         background: #007bff;
         color: #fff;
       }
+      /* make profile‑links look like plain text */
+      .post-info .username {
+        color: #222;            /* or whatever text color you’re using for names */
+        text-decoration: none;  /* remove the underline */
+        cursor: pointer;        /* still get the “clickable” hand */
+      }
+
+      /* optional hover state if you still want some affordance */
+      .post-info .username:hover {
+        text-decoration: underline;
+}
+
   </style>
 </head>
 
