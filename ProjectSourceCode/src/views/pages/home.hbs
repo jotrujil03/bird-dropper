@@ -3,66 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bird Dropper ‑ Search for Birds</title>
-
-  <!-- Bootstrap 5 & Font Awesome -->
+  <title>Bird Dropper - Search for Birds</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
-  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-
   <style>
-    /* ---------- GENERAL LAYOUT ---------- */
-    body{
-      background:#f8f9fa;
-      font-family:'Roboto',sans-serif;
-      margin:0;padding:0;
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
       {{#if theme}}
         {{#ifEquals theme 'dark'}}
-          background:#333;color:#f8f9fa;
+          background-color: #333;
+          color: #f8f9fa;
+        {{/ifEquals}}
+        {{#ifEquals theme 'system'}}
         {{/ifEquals}}
       {{/if}}
     }
-    .container{padding-top:60px;}
-    .card{border-radius:30px!important;}
 
-    /* ---------- SEARCH BAR ---------- */
-    .form-control{
-      border-radius:30px;border:none;
-      padding:1.15rem 1.25rem;font-size:1.75rem;
-      box-shadow:none;line-height:1.2;
+    .container {
+      padding-top: 60px; /* Increased spacing to push search bar lower */
     }
-    .form-control:focus{outline:none;box-shadow:none;}
-    .input-group-text{background:transparent;border:none;font-size:1.25rem;cursor:pointer;}
-    .input-group .form-control,.input-group .input-group-text{position:relative;top:8px;}
-    .form-control::placeholder{font-size:1.75rem;}
-    .form-control:focus::placeholder{color:transparent;}
 
-    /* ---------- BUTTONS & BADGES ---------- */
-    .btn{border-radius:30px;transition:background-color .3s,box-shadow .3s;}
-    .btn:hover,.btn:focus{background:#e2e6ea;box-shadow:0 0 8px rgba(0,0,0,.1);}
-    .badge{border-radius:20px;transition:background-color .3s;cursor:pointer;}
-    .badge:hover{background:#e2e6ea;}
+    .card {
+      border-radius: 30px !important;
+    }
 
-    /* ---------- HEADINGS ---------- */
-    header h1{font-size:6rem;line-height:1.1;}
-    header p{font-size:1.5rem;margin-top:.5rem;}
+    .form-control {
+      border-radius: 30px;
+      border: none;
+      padding: 1.15rem 1.25rem; /* Increased vertical padding */
+      font-size: 1.75rem; /* Matches placeholder text size */
+      box-shadow: none;
+      line-height: 1.2;
+    }
 
-    /* ---------- ICON SIZES ---------- */
+    .form-control:focus {
+      outline: none;
+      box-shadow: none;
+    }
+
+    .input-group-text {
+      background-color: transparent;
+      border: none;
+      font-size: 1.25rem;
+    }
+
+    .btn {
+      border-radius: 30px;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .btn:hover,
+    .btn:focus {
+      background-color: #e2e6ea;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .badge {
+      border-radius: 20px;
+      transition: background-color 0.3s;
+      cursor: pointer;
+    }
+
+    .badge:hover {
+      background-color: #e2e6ea;
+    }
+
+    .input-group .form-control,
+    .input-group .input-group-text {
+      position: relative;
+      top: 8px;
+    }
+
+    .form-control::placeholder {
+      font-size: 1.75rem;
+    }
+
+    .form-control:focus::placeholder {
+      color: transparent;
+    }
+
+    /* Enlarged title and subtitle */
+    header h1 {
+      font-size: 6rem; /* Huge like Google's logo */
+      line-height: 1.1;
+    }
+
+    header p {
+      font-size: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Enlarge the search and upload icons */
     .input-group-text i.fas.fa-search,
-    .input-group-text i.fas.fa-microphone{font-size:1.5rem;}
-
-    /* ---------- MICROPHONE COLORS ---------- */
-    #voiceSearchBtn i{color:#6c757d;}             /* default gray */
-    #voiceSearchBtn.listening i{color:#dc3545;}   /* red while recording */
+    .input-group-text i.fas.fa-upload {
+      font-size: 1.5rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     {{#if successMessage}}
-      <div class="alert alert-success mt-3 small-auto-dismiss text-center" role="alert"
-           style="font-size:.85rem;padding:.5rem 1rem;max-width:300px;margin:0 auto;">
+      <div class="alert alert-success mt-3 small-auto-dismiss text-center" role="alert" style="font-size: 0.85rem; padding: 0.5rem 1rem; max-width: 300px; margin: 0 auto;">
         {{successMessage}}
       </div>
     {{/if}}
@@ -70,61 +115,64 @@
     <div class="row justify-content-center mt-5 pt-4">
       <div class="col-md-8 text-center">
         <header class="mb-5">
-          <h1 class="fw-bold text-primary">Bird Dropper</h1>
+          <h1 class="fw-bold text-primary">Bird Dropper</h1>
           <p class="text-muted">Find information about any bird species</p>
         </header>
 
-        <!-- SEARCH BAR -->
         <section>
           <div class="card shadow-sm border-0 mb-4">
             <div class="card-body p-3">
-              <form id="search-form" action="/search" method="GET">
+              <form id="search-form" action="/search" method="GET" enctype="multipart/form-data">
                 <div class="input-group mb-3 align-items-center">
-                  <!-- search icon -->
-                  <span class="input-group-text" id="search-icon"
-                        onclick="document.getElementById('search-form').submit();">
-                    <i class="fas fa-search" aria-hidden="true"></i>
+                  <span class="input-group-text" id="search-icon" role="button" tabindex="0" style="cursor: pointer;" onclick="document.getElementById('search-form').submit();">
+                    <i class="fas fa-search text-muted" aria-hidden="true"></i>
                   </span>
-
-                  <!-- text input -->
-                  <input type="text" name="query" id="searchInput"
-                         class="form-control form-control-lg"
-                         placeholder="Search for a bird species..."
-                         aria-label="Search for bird species" aria-describedby="search-icon" autofocus>
-
-                  <!-- microphone button (hidden until supported) -->
-                  <button type="button" id="voiceSearchBtn"
-                          class="input-group-text d-none" title="Voice Search" aria-label="Voice Search">
-                    <i class="fas fa-microphone"></i>
-                  </button>
+                  <input
+                    type="text"
+                    name="query"
+                    class="form-control form-control-lg"
+                    placeholder="Search for a bird species..."
+                    aria-label="Search for bird species"
+                    aria-describedby="search-icon"
+                    autofocus>
+                  <label for="upload-image" class="input-group-text" style="cursor: pointer;" title="Upload an image">
+                    <i class="fas fa-upload text-muted" aria-hidden="true"></i>
+                  </label>
+                  <input
+                    type="file"
+                    name="image"
+                    id="upload-image"
+                    accept="image/*"
+                    class="d-none"
+                    aria-label="Upload image">
                 </div>
               </form>
             </div>
           </div>
         </section>
 
-        <!-- ACTION BUTTONS -->
         <section class="mt-4">
-          <button class="btn btn-light me-2" type="submit" form="search-form">Search Birds</button>
-          <a href="/browse" class="btn btn-light">Browse Popular Birds</a>
+          <button class="btn btn-light me-2" type="submit" form="search-form">Search Birds</button>
+          <a href="/browse" class="btn btn-light">Browse Popular Birds</a>
         </section>
 
-        <!-- RANDOM BIRD -->
         <div class="text-center my-3">
-          <button id="random-bird-btn" class="btn btn-success">
-            <i class="fas fa-dove"></i> Random Bird
-          </button>
-        </div>
-        <div id="random-bird-result" class="container mt-4"></div>
+        <button id="random-bird-btn" class="btn btn-success">
+          <i class="fas fa-dove"></i> Random Bird
+        </button>
+      </div>
 
-        <!-- POPULAR SEARCHES -->
+<!-- Random Bird Result -->
+<div id="random-bird-result" class="container mt-4"></div>
+
+
         <section class="mt-5">
           <h5>Popular Searches</h5>
           <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
-            <a href="/search?query=American Robin" class="badge bg-light text-dark p-2 text-decoration-none">American Robin</a>
-            <a href="/search?query=Bald Eagle" class="badge bg-light text-dark p-2 text-decoration-none">Bald Eagle</a>
-            <a href="/search?query=Blue Jay" class="badge bg-light text-dark p-2 text-decoration-none">Blue Jay</a>
-            <a href="/search?query=Northern Cardinal" class="badge bg-light text-dark p-2 text-decoration-none">Northern Cardinal</a>
+            <a href="/search?query=American Robin" class="badge bg-light text-dark p-2 text-decoration-none">American Robin</a>
+            <a href="/search?query=Bald Eagle" class="badge bg-light text-dark p-2 text-decoration-none">Bald Eagle</a>
+            <a href="/search?query=Blue Jay" class="badge bg-light text-dark p-2 text-decoration-none">Blue Jay</a>
+            <a href="/search?query=Northern Cardinal" class="badge bg-light text-dark p-2 text-decoration-none">Northern Cardinal</a>
             <a href="/search?query=Owl" class="badge bg-light text-dark p-2 text-decoration-none">Owl</a>
           </div>
         </section>
@@ -132,77 +180,144 @@
     </div>
   </div>
 
-  <!-- Giant faint dove icon in the corner -->
-  <div class="position-fixed bottom-0 end-0 opacity-10 d-none d-lg-block" style="z-index:-1;">
-    <i class="fas fa-dove text-primary" style="font-size:20rem;"></i>
+  <div class="position-fixed bottom-0 end-0 opacity-10 d-none d-lg-block" style="z-index: -1;">
+    <i class="fas fa-dove text-primary" style="font-size: 20rem;"></i>
   </div>
 
   {{> footer}}
 
-  <!-- Bootstrap 5 bundle (includes Popper) -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      const alertElem = document.querySelector('.small-auto-dismiss');
+      if (alertElem) {
+        setTimeout(() => {
+          alertElem.remove();
+        }, 3000);
+      }
+    });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- AUTO‑DISMISS SUCCESS MESSAGE -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const note = document.querySelector('.small-auto-dismiss');
-      if (note) setTimeout(() => note.remove(), 3000);
-    });
-  </script>
+const birds = [
+  {
+    name: "American Robin",
+    habitat: "Gardens and parks across North America",
+    img: "/images/american_robin.jpeg"
+  },
+  {
+    name: "Bald Eagle",
+    habitat: "Near rivers and lakes in North America",
+    img: "/images/bald_eagle.jpeg"
+  },
+  {
+    name: "Northern Cardinal",
+    habitat: "Woodlands and suburban gardens in Eastern North America",
+    img: "/images/northern_cardinal.jpg"
+  },
+  {
+    name: "Blue Jay",
+    habitat: "Forests and suburban backyards",
+    img: "/images/blue_jay.jpeg"
+  },
+  {
+    name: "Mourning Dove",
+    habitat: "Fields and urban areas",
+    img: "/images/mourning_dove.jpeg"
+  },
+  {
+    name: "Harpy Eagle",
+    habitat: "Amazon rainforest",
+    img: "/images/harpy_eagle.jpeg"
+  },
+  {
+    name: "Toco Toucan",
+    habitat: "Forests in central South America",
+    img: "/images/toco_toucan.jpeg"
+  },
+  {
+    name: "Scarlet Macaw",
+    habitat: "Rainforests in South America",
+    img: "/images/scarlet_macaw.jpeg"
+  },
+  {
+    name: "Andean Condor",
+    habitat: "Andes mountains",
+    img: "/images/andean_condor.jpeg"
+  },
+  {
+    name: "Ruby-throated Hummingbird",
+    habitat: "Eastern North America gardens",
+    img: "/images/ruby_hummingbird.jpeg"
+  },
+  {
+    name: "Great Blue Heron",
+    habitat: "Wetlands across North America",
+    img: "/images/great_blue_heron.jpg"
+  },
+  {
+    name: "Canada Goose",
+    habitat: "Lakes and ponds in North America",
+    img: "/images/canada_goose.jpeg"
+  },
+  {
+    name: "Peregrine Falcon",
+    habitat: "Cliffs and tall buildings worldwide",
+    img: "/images/peregrine_falcon.jpeg"
+  },
+  {
+    name: "King Vulture",
+    habitat: "Tropical forests in South America",
+    img: "/images/king_vulture.jpeg"
+  },
+  {
+    name: "Hoatzin",
+    habitat: "Swamps and riversides of the Amazon",
+    img: "/images/hoatzin.jpeg"
+  },
+  {
+    name: "Cock-of-the-rock",
+    habitat: "Andean cloud forests",
+    img: "/images/cock_of_the_rock.jpeg"
+  },
+  {
+    name: "Jabiru Stork",
+    habitat: "Wetlands in South America",
+    img: "/images/jabiru_stork.JPG"
+  },
+  {
+    name: "Rhea",
+    habitat: "Grasslands of Argentina and Brazil",
+    img: "/images/rhea.jpeg"
+  },
+  {
+    name: "European Robin",
+    habitat: "European woodlands and gardens",
+    img: "/images/european_robin.jpg"
+  },
+  {
+    name: "Common Blackbird",
+    habitat: "European forests and parks",
+    img: "/images/common_blackbird.jpeg"
+  }
+];
 
-  <!-- VOICE SEARCH -->
-  <script>
-    if (['https:', 'file:'].includes(location.protocol) || location.hostname === 'localhost') {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const voiceBtn    = document.getElementById('voiceSearchBtn');
-        const searchInput = document.getElementById('searchInput');
-        voiceBtn.classList.remove('d-none');   // show mic
+document.getElementById("random-bird-btn").addEventListener("click", function() {
+  const randomIndex = Math.floor(Math.random() * birds.length);
+  const bird = birds[randomIndex];
 
-        const recognition = new SpeechRecognition();
-        recognition.lang           = 'en-US';
-        recognition.continuous     = false;
-        recognition.interimResults = false;
+  document.getElementById("random-bird-result").innerHTML = `
+    <div class="card shadow-sm mx-auto" style="max-width: 600px; border-radius:20px;">
+      <img src="${bird.img}" class="card-img-top" alt="${bird.name}" style="height:350px; object-fit:cover;">
+      <div class="card-body">
+        <h3 class="card-title">${bird.name}</h3>
+        <p class="card-text text-muted">${bird.habitat}</p>
+      </div>
+    </div>
+  `;
+});
+</script>
 
-        // turn mic red only when recording actually starts
-        recognition.onstart = () => voiceBtn.classList.add('listening');
 
-        // stay red a bit after stop for smoother UX
-        recognition.onend = () => setTimeout(() => voiceBtn.classList.remove('listening'), 300);
-
-        recognition.onresult = e => {
-          if (e.results.length) {
-            const transcript = e.results[0][0].transcript;
-            searchInput.value += (searchInput.value ? ' ' : '') + transcript;
-            searchInput.focus();
-            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
-          }
-        };
-        recognition.onerror = e => console.error('Speech Recognition Error:', e.error);
-
-        voiceBtn.addEventListener('click', () => {
-          try { recognition.start(); }
-          catch (err) { console.error('Speech Recognition Start Error:', err); }
-        });
-      }
-    }
-  </script>
-
-  <!-- RANDOM BIRD JS (unchanged) -->
-  <script>
-    const birds=[/* your bird array stays here */];
-
-    document.getElementById('random-bird-btn').addEventListener('click',()=>{
-      const b = birds[Math.floor(Math.random()*birds.length)];
-      document.getElementById('random-bird-result').innerHTML = `
-        <div class="card shadow-sm mx-auto" style="max-width:600px;border-radius:20px;">
-          <img src="${b.img}" class="card-img-top" alt="${b.name}" style="height:350px;object-fit:cover;">
-          <div class="card-body">
-            <h3 class="card-title">${b.name}</h3>
-            <p class="card-text text-muted">${b.habitat}</p>
-          </div>
-        </div>`;
-    });
-  </script>
 </body>
 </html>

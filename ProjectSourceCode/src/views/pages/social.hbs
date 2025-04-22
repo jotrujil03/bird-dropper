@@ -266,7 +266,7 @@
               <img src="{{user.avatar}}" alt="avatar" class="avatar">
               <div class="post-info">
                 <a href="/collections/{{user.id}}" class="username">{{user.username}}</a>
-                <span class="timestamp" data-utc="{{createdAt}}"></span>
+                <span class="timestamp">{{formatDate createdAt}}</span>
               </div>
               {{#if (eq ../user.id user.id)}}
                 <div class="options-menu">
@@ -623,22 +623,6 @@
         searchResults.style.display = 'none';
       }
     });
-
-  document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('.timestamp').forEach(el => {
-        const utc = el.dataset.utc;
-        if (!utc) return;
-        const date = new Date(utc);
-        el.textContent = date.toLocaleString(undefined, {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      });
-    });
-    
   </script>
 </body>
 </html>
