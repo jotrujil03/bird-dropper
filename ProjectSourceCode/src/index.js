@@ -642,7 +642,7 @@ app.post('/like-collection/:id', auth, async (req, res) => {
         WHERE collection_id = $1`,
       [colId]
     );
-
+    io.emit('notificationUpdate');
     res.json({ success: true, likeCount: count, isLiked: !existing });
   } catch (err) {
     console.error('Error toggling collection like:', err);
