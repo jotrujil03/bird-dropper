@@ -836,9 +836,6 @@ app.get('/api/notifications', auth, async (req, res) => {
       const truncatedCaption = c.post_caption.length > captionLength ?
         `${c.post_caption.substring(0, captionLength)}...` :
         c.post_caption;
-      const truncatedComment = c.comment_text.length > captionLength ?
-        `${c.comment_text.substring(0, captionLength)}...` :
-        c.comment_text;
       notifications.push({
         message: `${c.from_user} commented on your post "${truncatedCaption}": "${truncatedComment}"`,
         postId : c.post_id
@@ -849,10 +846,8 @@ app.get('/api/notifications', auth, async (req, res) => {
             `${cl.collection_description.substring(0, captionLength)}...` :
             cl.collection_description;
         notifications.push({
-            type: 'collection_like', // Add a type for clarity
             message: `${cl.from_user} liked your collection item "${truncatedDesc}"`,
-            collectionId : cl.collection_id, // Use collectionId
-            created_at: cl.created_at // Include timestamp for sorting
+            collectionId : cl.collection_id
         });
     });
     notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
