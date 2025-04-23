@@ -113,30 +113,46 @@ app.use((req, res, next) => { res.locals.user = req.session.user || null; next()
 const auth = (req, res, next) => { if (!req.session.user) return res.redirect('/login'); next(); };
 
 // ──────────────────  DATABASE  ──────────────────
+// fallback to 'db' if no DB_HOST (e.g. in Docker Compose)
+const dbHost = process.env.DB_HOST || 'db';
+const dbPort = parseInt(process.env.DB_PORT || '5432', 10);
+
 const db = pgp({
-  host    : 'db',
-  port    : 5432,
-  database: process.env.POSTGRES_DB,
-  user    : process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD
+  host     : dbHost,
+  port     : dbPort,
+  database : process.env.POSTGRES_DB,
+  user     : process.env.POSTGRES_USER,
+  password : process.env.POSTGRES_PASSWORD,
+  // only use SSL if you’ve set DB_HOST (i.e. in production)
+  ssl      : process.env.DB_HOST
+             ? { rejectUnauthorized: false }
+             : false
 });
-db.connect().then(obj => {
-  obj.done();
-  console.log('📦  Connected to PostgreSQL');
-  (async () => {
-    const email = 'admin@admin.com';
-    const exists = await db.oneOrNone('SELECT 1 FROM students WHERE email=$1', [email]);
-    if (!exists) {
-      const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
-      await db.none(
-        `INSERT INTO students(first_name,last_name,email,username,password,profile_photo)
-         VALUES('Admin','User',$1,'admin',$2,'')`,
-        [email, hash]
+
+db.connect()
+  .then(obj => {
+    obj.done();
+    console.log('📦  Connected to PostgreSQL');
+
+    (async () => {
+      const email = 'admin@admin.com';
+      const exists = await db.oneOrNone(
+        'SELECT 1 FROM students WHERE email=$1',
+        [email]
       );
-      console.log('👑  Admin account created');
-    }
-  })();
-}).catch(e => console.error('DB ERROR:', e.message || e));
+      if (!exists) {
+        const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+        await db.none(
+          `INSERT INTO students(first_name,last_name,email,username,password,profile_photo)
+           VALUES('Admin','User',$1,'admin',$2,'')`,
+          [email, hash]
+        );
+        console.log('👑  Admin account created');
+      }
+    })();
+  })
+  .catch(e => console.error('DB ERROR:', e.message || e));
+
 
 // ────────────────────────────────────────────────
 //                 AUTH / USER ROUTES
