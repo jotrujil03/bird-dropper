@@ -112,28 +112,45 @@ app.use(session({
 app.use((req, res, next) => { res.locals.user = req.session.user || null; next(); });
 const auth = (req, res, next) => { if (!req.session.user) return res.redirect('/login'); next(); };
 
-// ──────────────────  DATABASE  ──────────────────
-// fallback to 'db' if no DB_HOST (e.g. in Docker Compose)
-const dbHost = process.env.DB_HOST || 'db';
-const dbPort = parseInt(process.env.DB_PORT || '5432', 10);
 
-const db = pgp({
-  host     : dbHost,
-  port     : dbPort,
-  database : process.env.POSTGRES_DB,
-  user     : process.env.POSTGRES_USER,
-  password : process.env.POSTGRES_PASSWORD,
-  // only use SSL if you’ve set DB_HOST (i.e. in production)
-  ssl      : process.env.DB_HOST
-             ? { rejectUnauthorized: false }
-             : false
-});
+// ──────────────────  DATABASE  ──────────────────
+// (– no second `require('pg-promise')()` here –)
+
+// Figure out host/port for both Render and Docker-Compose
+const defaultHost = process.env.DB_HOST
+                  || process.env.POSTGRES_HOST
+                  || 'db';
+const defaultPort = process.env.DB_PORT
+                  || process.env.POSTGRES_PORT
+                  || '5432';
+
+// If Render injected DATABASE_URL, use that (with SSL).
+// Otherwise build a config object (falling back to 'db' for Compose).
+let connectionConfig;
+if (process.env.DATABASE_URL) {
+  connectionConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  };
+} else {
+  connectionConfig = {
+    host     : defaultHost,
+    port     : parseInt(defaultPort, 10),
+    database : process.env.POSTGRES_DB,
+    user     : process.env.POSTGRES_USER,
+    password : process.env.POSTGRES_PASSWORD,
+    ssl      : false
+  };
+}
+
+const db = pgp(connectionConfig);
 
 db.connect()
   .then(obj => {
     obj.done();
     console.log('📦  Connected to PostgreSQL');
 
+    // ---- bootstrap admin user if missing ----
     (async () => {
       const email = 'admin@admin.com';
       const exists = await db.oneOrNone(
@@ -143,7 +160,11 @@ db.connect()
       if (!exists) {
         const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
         await db.none(
-          `INSERT INTO students(first_name,last_name,email,username,password,profile_photo)
+          `INSERT INTO students(
+             first_name, last_name,
+             email, username,
+             password, profile_photo
+           )
            VALUES('Admin','User',$1,'admin',$2,'')`,
           [email, hash]
         );
