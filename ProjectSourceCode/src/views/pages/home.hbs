@@ -160,7 +160,7 @@
                   <label for="upload-image" class="input-group-text" title="Upload an image">
                     <i class="fas fa-upload text-muted" aria-hidden="true"></i>
                   </label>
-                  <input type="file" name="image" id="upload-image" accept="image/*" class="d-none" aria-label="Upload image">
+                  <input type="file" name="image" id="upload-image" accept="image/*" class="d-none" aria-label="Upload image" >
                 </div>
               </form>
             </div>
@@ -275,6 +275,16 @@
         </div>
       `;
     });
+
+    // Auto-submit form when an image is selected
+    const uploadInput = document.getElementById('upload-image');
+    if (uploadInput) {
+      uploadInput.addEventListener('change', function () {
+        if (this.files && this.files.length > 0) {
+          document.getElementById('search-form').submit();
+        }
+      });
+    }
   </script>
 </body>
 </html>

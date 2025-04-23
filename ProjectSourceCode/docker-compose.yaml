@@ -1,17 +1,22 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:14
-    env_file: .env
+    env_file:
+      - .env
     expose:
       - '5432'
     volumes:
       - group-project:/var/lib/postgresql/data
       - ./src/init_data:/docker-entrypoint-initdb.d
+
   web:
     image: node:lts
     user: 'node'
     working_dir: /repository
-    env_file: .env
+    env_file:
+      - .env
     environment:
       - NODE_ENV=development
     depends_on:
@@ -20,6 +25,9 @@ services:
       - '3000:3000'
     volumes:
       - ./:/repository
+      # <-- mount your Vision key JSON, read-only
+      - ./.secrets/google-vision-key.json:/repository/.secrets/google-vision-key.json:ro
     command: 'npm run testandrun'
+
 volumes:
   group-project:
