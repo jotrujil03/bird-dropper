@@ -1034,6 +1034,7 @@ app.get('/browse', async (req, res) => {
 
 app.get('/fact-of-the-day', (req, res) => {
   const birdFacts = [
+    // every fact of the day
     "Hummingbirds can fly backwards.",
     "Owls can rotate their necks about 270 degrees.",
     "Peregrine Falcons dive at speeds over 240 mph.",
@@ -1053,10 +1054,11 @@ app.get('/fact-of-the-day', (req, res) => {
     "The Emu is Australia's largest bird and second largest bird in the world.",
     "The Northern Cardinal can live up to 15 years in the wild.",
     "Geese mate for life and mourn the loss of their partners.",
-    "The smallest bird egg belongs to the hummingbird."
+    "The smallest bird egg belongs to the hummingbird.",
+    "Hummingbirds are the only birds that can fly backward and hover in place."
   ];
 
-  // Pick a fact based on today's date
+  // new fact based on date
   const date = new Date();
   const todayIndex = date.getDate() % birdFacts.length;
   const factOfTheDay = birdFacts[todayIndex];
