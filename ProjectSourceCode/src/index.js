@@ -16,12 +16,22 @@ const io            = socketIO(server);
 const handlebars    = require('express-handlebars');
 const path          = require('path');
 const pgp           = require('pg-promise')();
+const db = pgp({
+  host    : process.env.POSTGRES_HOST,
+  port    : 5432,
+  database: process.env.POSTGRES_DB,
+  user    : process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD
+});
 const bodyParser    = require('body-parser');
 const session       = require('express-session');
+const PgStore       = require('connect-pg-simple')(session);
 const bcrypt        = require('bcryptjs');
 const multer        = require('multer');
 const axios         = require('axios');
 const { createClient } = require('@supabase/supabase-js');
+const { ImageAnnotatorClient } = require('@google-cloud/vision');
+const visionClient = new ImageAnnotatorClient();
 
 // ──────────────────  SUPABASE  ──────────────────
 const supabase = createClient(
@@ -100,26 +110,21 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'resources')));
 app.use(session({
-  secret           : process.env.SESSION_SECRET,
+  store: new PgStore({
+    pgPromise: db
+  }),
+  secret: process.env.SESSION_SECRET,
   saveUninitialized: false,
-  resave           : false,
-  cookie           : {
-    secure : process.env.NODE_ENV === 'production',
-    maxAge : 30 * 24 * 60 * 60 * 1000,
-    httpOnly: true
+  resave: false,
+  cookie: {
+    secure: false,
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   }
 }));
 app.use((req, res, next) => { res.locals.user = req.session.user || null; next(); });
 const auth = (req, res, next) => { if (!req.session.user) return res.redirect('/login'); next(); };
 
 // ──────────────────  DATABASE  ──────────────────
-const db = pgp({
-  host    : 'db',
-  port    : 5432,
-  database: process.env.POSTGRES_DB,
-  user    : process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD
-});
 db.connect().then(obj => {
   obj.done();
   console.log('📦  Connected to PostgreSQL');
@@ -181,8 +186,12 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const u = await db.oneOrNone('SELECT * FROM students WHERE email=$1', [email]);
-    if (!u || !(await bcrypt.compare(password, u.password)))
+    if (!u || !(await bcrypt.compare(password, u.password))) {
+      console.log('Login failed - invalid credentials');
       return res.render('pages/login', { title: 'Login', error: 'Invalid email or password', formData: { email } });
+    }
+    const passwordMatch = await bcrypt.compare(password, u.password);
+    console.log('Password match:', passwordMatch); // Add this line
     req.session.user = {
       id        : u.student_id,
       email     : u.email,
@@ -193,7 +202,7 @@ app.post('/login', async (req, res) => {
     };
     res.redirect('/');
   } catch (err) {
-    console.error(err);
+    console.error('Login error:', err);
     res.render('pages/login', { title: 'Login', error: 'Login failed.', formData: { email } });
   }
 });
@@ -633,7 +642,7 @@ app.post('/like-collection/:id', auth, async (req, res) => {
         WHERE collection_id = $1`,
       [colId]
     );
-
+    io.emit('notificationUpdate');
     res.json({ success: true, likeCount: count, isLiked: !existing });
   } catch (err) {
     console.error('Error toggling collection like:', err);
@@ -779,6 +788,8 @@ app.post('/like-collection/:id', auth, async (req, res) => {
 // ────────────────────────────────────────────────
 app.get('/api/notifications', auth, async (req, res) => {
   const userId = req.session.user.id;
+  const captionLength = 20; // Adjust this as needed
+
   try {
     const likes = await db.any(`
       SELECT l.post_id, s.username AS from_user, p.caption AS post_caption
@@ -798,16 +809,55 @@ app.get('/api/notifications', auth, async (req, res) => {
       ORDER BY c.created_at DESC
       LIMIT 5;
     `, [userId]);
+    const collectionLikes = await db.any(`
+      SELECT
+        cl.collection_id,
+        c.user_id AS ownerId,
+        s.username AS from_user,
+        COALESCE(c.description, 'an item') AS collection_description,
+        cl.created_at
+      FROM collection_likes cl
+      JOIN collections c ON cl.collection_id = c.collection_id
+      JOIN students s ON cl.user_id = s.student_id
+      WHERE c.user_id = $1
+      ORDER BY cl.created_at DESC
+      LIMIT 5;
+    `, [userId]);
     const notifications = [];
-    likes.forEach(l => notifications.push({
-      message: `${l.from_user} liked your post "${l.post_caption}"`,
-      postId : l.post_id
-    }));
-    comments.forEach(c => notifications.push({
-      message: `${c.from_user} commented on your post "${c.post_caption}": "${c.comment_text}"`,
-      postId : c.post_id
-    }));
-    res.json({ notifications });
+    likes.forEach(l => {
+      const truncatedCaption = l.post_caption.length > captionLength ?
+        `${l.post_caption.substring(0, captionLength)}...` :
+        l.post_caption;
+      notifications.push({
+        message: `${l.from_user} liked your post "${truncatedCaption}"`,
+        postId : l.post_id
+      });
+    });
+    comments.forEach(c => {
+      const truncatedCaption = c.post_caption.length > captionLength ?
+        `${c.post_caption.substring(0, captionLength)}...` :
+        c.post_caption;
+      notifications.push({
+        message: `${c.from_user} commented on your post "${truncatedCaption}": "${truncatedComment}"`,
+        postId : c.post_id
+      });
+    });
+    collectionLikes.forEach(cl => {
+        const truncatedDesc = cl.collection_description.length > captionLength ?
+            `${cl.collection_description.substring(0, captionLength)}...` :
+            cl.collection_description;
+        notifications.push({
+            type: 'collection_like',
+            message: `${cl.from_user} liked your collection item "${truncatedDesc}"`,
+            collectionId : cl.collection_id,
+            ownerId: cl.ownerId,
+            created_at: cl.created_at
+        });
+    });
+    notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const totalLimit = 10;
+    const finalNotifications = notifications.slice(0, totalLimit);
+    res.json({ notifications: finalNotifications });
   } catch (err) {
     console.error('Notification fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch notifications' });
@@ -1103,6 +1153,116 @@ app.post('/update-profile-image', auth, upload.single('profileImage'), async (re
     console.error(e);
     res.status(500).json({ success: false, error: 'Failed to update profile picture.' });
   }
+});
+
+// ────────────────────────────────────────────────
+//         IMAGE IDENTIFICATION ROUTE
+// ────────────────────────────────────────────────
+app.post('/identify-bird-and-search', auth, upload.single('image'), async (req, res) => {
+    const minOverallConfidence = 0.6;
+    const minSpecificConfidence = 0.8;
+    const minTypeConfidence = 0.7;
+
+    const termsToIgnore = [
+        'Animal', 'Organism', 'Fauna', 'Vertebrate', 'Wildlife',
+        'Beak', 'Wing', 'Feather', 'Bill',
+        'Nature', 'Outdoor', 'Sky', 'Tree', 'Plant', 'Branch', 'Leaf', 'Ground', 'Water', 'Habitat', 'Environment',
+        'Photography', 'Adaptation', 'Illustrative technique', 'Art', 'Painting',
+        'Terrestrial animal', 'Avian'
+    ];
+
+    const commonBirdTypes = [
+        'Duck', 'Owl', 'Hawk', 'Eagle', 'Sparrow', 'Finch', 'Robin',
+        'Cardinal', 'Jay', 'Falcon', 'Goose', 'Heron', 'Vulture', 'Toucan',
+        'Macaw', 'Condor', 'Hummingbird', 'Stork', 'Rhea', 'Pigeon', 'Dove',
+        'Crow', 'Raven', 'Seagull', 'Pelican', 'Kingfisher', 'Woodpecker',
+        'Crane', 'Swan', 'Flamingo', 'Parrot', 'Toucan', 'Penguin', 'Ostrich', 'Emu'
+    ];
+
+
+    const file = req.file;
+
+    if (!file) {
+        setTimeout(() => {
+             res.redirect('/?error=No+image+uploaded');
+        }, 0);
+        return;
+    }
+
+    let birdName = '';
+
+    try {
+        const [result] = await visionClient.labelDetection(file.buffer);
+        const labels = result.labelAnnotations;
+
+        if (!labels || labels.length === 0) {
+             setTimeout(() => {
+                 res.redirect('/?error=No+details+detected+in+the+image');
+             }, 0);
+             return;
+        }
+
+        labels.sort((a, b) => b.score - a.score);
+
+        let bestCandidate = { description: '', score: -1, priority: -1 };
+
+        const labelsToProcess = labels.slice(0, 30);
+
+        for (const label of labelsToProcess) {
+            const description = label.description;
+            const score = label.score;
+            let currentPriority = 0;
+
+            if (score < minOverallConfidence) {
+                 continue;
+            }
+
+            if (termsToIgnore.includes(description)) {
+                 continue;
+            }
+
+            const isMultiWord = description.split(' ').length > 1;
+            const isCommonBirdType = commonBirdTypes.includes(description);
+
+            if (isMultiWord && score >= minSpecificConfidence) {
+                currentPriority = 3;
+            } else if (isCommonBirdType && score >= minTypeConfidence) {
+                currentPriority = 2;
+            } else if (description === 'Bird' && score >= minOverallConfidence) {
+                currentPriority = 1;
+            }
+
+            if (currentPriority > 0) {
+                if (currentPriority > bestCandidate.priority) {
+                    bestCandidate = { description, score, priority: currentPriority };
+                } else if (currentPriority === bestCandidate.priority) {
+                    if (score > bestCandidate.score) {
+                         bestCandidate = { description, score, priority: currentPriority };
+                    }
+                }
+            }
+        }
+
+        if (bestCandidate.priority >= 2) {
+            birdName = bestCandidate.description;
+            setTimeout(() => {
+                const searchQuery = encodeURIComponent(birdName);
+                res.redirect(`/search?query=${searchQuery}`);
+            }, 0);
+
+        } else {
+            const errorMessage = encodeURIComponent("We weren't able to identify a specific bird. Please try uploading a clearer photo.");
+            setTimeout(() => {
+                 res.redirect(`/?error=${errorMessage}`);
+            }, 0);
+        }
+
+    } catch (error) {
+        console.error('Error during bird identification process:', error);
+        setTimeout(() => {
+            res.redirect('/?error=Image+analysis+failed+due+to+an+internal+error');
+        }, 0);
+    }
 });
 
 // ────────────────────────────────────────────────

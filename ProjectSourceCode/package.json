@@ -2,11 +2,12 @@
   "name": "Bird Dropper",
   "main": "src/index.js",
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
+    "@google-cloud/vision": "^5.1.0",
     "@supabase/supabase-js": "^2.49.4",
     "axios": "^1.8.4",
     "bcryptjs": "^2.4.0",
     "body-parser": "^1.20.3",
+    "connect-pg-simple": "^10.0.0",
     "dotenv": "^16.5.0",
     "express": "^4.6.1",
     "express-handlebars": "^7.1.2",
