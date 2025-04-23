@@ -838,7 +838,7 @@ app.get('/api/notifications', auth, async (req, res) => {
         `${c.post_caption.substring(0, captionLength)}...` :
         c.post_caption;
       notifications.push({
-        message: `${c.from_user} commented on your post "${truncatedCaption}": "${truncatedComment}"`,
+        message: `${c.from_user} commented on your post "${truncatedCaption}"`,
         postId : c.post_id
       });
     });
