@@ -8,7 +8,8 @@
 // ──────────────────  DEPENDENCIES  ──────────────────
 require('dotenv').config();
 const express       = require('express');
-const app           = express();
+const app           = express()
+app.set('trust proxy', 1);
 const http          = require('http');
 const server        = http.createServer(app);
 const socketIO      = require('socket.io');
@@ -150,14 +151,17 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'resources')));
+
+// 🔄  REPLACE the old session config with this:
 app.use(session({
   secret           : process.env.SESSION_SECRET,
   saveUninitialized: false,
   resave           : false,
   cookie           : {
-    secure : process.env.NODE_ENV === 'production',
-    maxAge : 30 * 24 * 60 * 60 * 1000,
-    httpOnly: true
+    secure  : 'auto',          // works locally AND behind HTTPS on Render
+    sameSite: 'lax',           // CSRF-friendly default
+    httpOnly: true,
+    maxAge  : 30 * 24 * 60 * 60 * 1000
   }
 }));
 app.use((req, res, next) => { res.locals.user = req.session.user || null; next(); });
