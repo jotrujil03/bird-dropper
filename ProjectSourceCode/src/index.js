@@ -1068,9 +1068,11 @@ app.get('/fact-of-the-day', (req, res) => {
 
 
 
-
+// renders in settings
 app.get('/settings', (req, res) => res.render('pages/settings', { title: 'Settings' }));
 
+
+// search for birds, fetches info from wikipedia api
 app.get('/search', async (req, res) => {
   const { query } = req.query;
   if (!query || !query.trim())
