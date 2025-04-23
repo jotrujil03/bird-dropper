@@ -1,5 +1,5 @@
 -- Connect to the database
--- \c users_db;
+\c users_db;
 
 -- ===========================
 --  STUDENTS

@@ -33,13 +33,16 @@
   }
   .like-collection-btn.liked { color: red; }
 </style>
+
 <div class="container py-5">
+
   <!-- Username Heading Centered -->
   <div class="row mb-4">
     <div class="col-12 text-center">
       <h2 class="display-4 mb-0">{{userViewed.username}}'s Collection</h2>
     </div>
   </div>
+
   <!-- Controls: Follow/Unfollow, Sort, Add Photo -->
   <div class="d-flex justify-content-center align-items-center mb-4 gap-3">
     {{#unless isOwner}}
@@ -47,10 +50,12 @@
         {{#if isFollowing}}Unfollow{{else}}Follow{{/if}}
       </button>
     {{/unless}}
+
     <select id="sortSelect" class="form-select w-auto">
       <option value="recent">Most Recent</option>
       <option value="liked">Most Liked</option>
     </select>
+
     {{#if isOwner}}
       <button id="add-photo-btn" class="btn btn-outline-primary btn-lg">
         <i class="fas fa-upload me-2"></i>Add Bird
@@ -58,19 +63,24 @@
       <input type="file" id="collectionImages" class="d-none" multiple>
     {{/if}}
   </div>
+
   {{#if error}}
     <div class="alert alert-danger mb-3">{{error}}</div>
   {{/if}}
+
   <div id="upload-collection-status" class="form-text mb-3 text-center"></div>
+
   <div class="row g-4" id="collection-grid">
     {{#each photos}}
       <div class="col-12 col-md-6 col-lg-4">
         <div class="card h-100 shadow-sm">
+
           <div class="photo-wrapper">
             <img src="{{this.image_url}}"
                  class="card-img-top h-100"
                  style="object-fit:cover;"
                  alt="Photo">
+
             {{#if ../isOwner}}
             <div class="overlay">
               <button class="btn btn-light edit-desc-btn"
@@ -86,12 +96,14 @@
             </div>
             {{/if}}
           </div>
+
           <div class="card-body text-center">
             <button class="like-collection-btn {{#if this.isLiked}}liked{{/if}}"
                     data-id="{{this.collection_id}}">
               <i class="fa fa-heart"></i>
               <span class="like-count">{{this.likeCount}}</span>
             </button>
+
             <p class="card-text desc-text mb-2"
                data-id="{{this.collection_id}}">
               {{#if this.description}}
@@ -102,6 +114,7 @@
             </p>
             <small class="text-muted d-block mt-2">{{formatDate this.created_at}}</small>
           </div>
+
         </div>
       </div>
     {{else}}
@@ -118,6 +131,7 @@
     {{/each}}
   </div>
 </div>
+
 <!-- Description Modal -->
 <div class="modal fade" id="descModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -141,6 +155,7 @@
     </form>
   </div>
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   // 1) Initialize sortSelect based on server-provided {{sort}}
@@ -155,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     params.set('sort', sortSelect.value);
     window.location.search = params.toString();
   });
+
   // Follow/Unfollow
   const followBtn = document.getElementById('follow-btn');
   if (followBtn) {
@@ -177,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
   // Add-photo & upload
   const addBtn    = document.getElementById('add-photo-btn'),
         fileInput = document.getElementById('collectionImages'),
@@ -234,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
   // Edit description
   let currentId;
   const descModal = new bootstrap.Modal(document.getElementById('descModal'));
@@ -264,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Could not save description.');
     }
   });
+
   // Delete photo
   document.body.addEventListener('click', async e => {
     const btn = e.target.closest('.delete-collection-btn');
@@ -283,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Could not delete photo.');
     }
   });
+
   // Like / Unlike
   document.body.addEventListener('click', async e => {
     const btn = e.target.closest('.like-collection-btn');
@@ -305,4 +325,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+
 {{> footer}}

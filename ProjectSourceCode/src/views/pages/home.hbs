@@ -216,65 +216,6 @@
         recognition.lang           = 'en-US';
         recognition.continuous     = false;
         recognition.interimResults = false;
-        
-<script>
-  document.addEventListener("DOMContentLoaded", function(){
-    const alertElem = document.querySelector('.small-auto-dismiss');
-    if (alertElem) {
-      setTimeout(() => {
-        alertElem.remove();
-      }, 3000);
-    }
-
-    const fileInput = document.getElementById('upload-image');
-    const searchForm = document.getElementById('search-form');
-    const searchInput = searchForm.querySelector('input[name="query"]');
-
-    // Listen for file selection
-    fileInput.addEventListener('change', function() {
-        if (this.files && this.files.length > 0) {
-            // If a file is selected, submit form for image analysis
-            searchForm.action = '/identify-bird-and-search';
-            searchForm.method = 'POST';
-            // Optionally clear text input if image is uploaded
-            searchInput.value = ''; 
-            searchForm.submit();
-        }
-    });
-
-    // Listen for form submission (handles both button click and enter key in text field)
-    searchForm.addEventListener('submit', function(event) {
-        const queryText = searchInput.value.trim();
-        const hasFile = fileInput.files && fileInput.files.length > 0;
-
-        if (queryText !== '' && !hasFile) {
-            // If only text is entered, use the original GET /search
-            searchForm.action = '/search';
-            searchForm.method = 'GET';
-            // Allow default submit
-        } else if (queryText === '' && hasFile) {
-            // If only image is uploaded (already handled by change listener, but double check)
-             searchForm.action = '/identify-bird-and-search';
-             searchForm.method = 'POST';
-            // Allow default submit
-        } else if (queryText !== '' && hasFile) {
-             // Handle case where BOTH text and image are provided
-             alert('Please provide either a search term or an image, not both.');
-             event.preventDefault(); // Stop form submission
-        } else {
-             // Handle empty text and no image
-             alert('Please enter a search term or upload an image.');
-             event.preventDefault(); // Stop form submission
-        }
-    });
-
-     // Ensure the search icon click triggers form submission (will use the logic above)
-     document.getElementById('search-icon').addEventListener('click', function() {
-         searchForm.submit();
-     });
-
-  });
-</script>
 
         recognition.onstart = () => voiceBtn.classList.add('listening');
         recognition.onend = () => setTimeout(() => voiceBtn.classList.remove('listening'), 300);
