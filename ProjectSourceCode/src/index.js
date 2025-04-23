@@ -21,6 +21,8 @@ const session       = require('express-session');
 const bcrypt        = require('bcryptjs');
 const multer        = require('multer');
 const axios         = require('axios');
+const { ImageAnnotatorClient } = require('@google-cloud/vision');
+const visionClient = new ImageAnnotatorClient();
 const { createClient } = require('@supabase/supabase-js');
 
 // ──────────────────  SUPABASE  ──────────────────
@@ -70,6 +72,53 @@ async function fetchBirdInfoFromWikipedia(birdName) {
 
 // ──────────────────  MULTER (memory)  ──────────────────
 const upload = multer({ storage: multer.memoryStorage() });
+
+// ──────────────────  GOOGLE VISION  ──────────────────
+//  A self‑contained helper that mimics the heuristic logic of the
+//  working branch.  Returns the *best* label or throws if none.
+// ------------------------------------------------------
+async function recogniseBird(buffer) {
+  // Confidence thresholds
+  const MIN_OVERALL   = 0.60;
+  const MIN_SPECIFIC  = 0.80;
+  const MIN_TYPE      = 0.70;
+
+  const TERMS_IGNORE = new Set([
+    'Animal','Organism','Fauna','Vertebrate','Wildlife','Beak','Wing','Feather','Bill',
+    'Nature','Outdoor','Sky','Tree','Plant','Branch','Leaf','Ground','Water','Habitat','Environment',
+    'Photography','Adaptation','Illustrative technique','Art','Painting','Terrestrial animal','Avian'
+  ]);
+
+  const COMMON_TYPES = new Set([
+    'Duck','Owl','Hawk','Eagle','Sparrow','Finch','Robin','Cardinal','Jay','Falcon','Goose','Heron','Vulture','Toucan','Macaw','Condor','Hummingbird','Stork','Rhea','Pigeon','Dove','Crow','Raven','Seagull','Pelican','Kingfisher','Woodpecker','Crane','Swan','Flamingo','Parrot','Penguin','Ostrich','Emu'
+  ]);
+
+  const [result] = await visionClient.labelDetection(buffer);
+  const labels   = result.labelAnnotations || [];
+  if (!labels.length) throw new Error('No labels');
+
+  labels.sort((a,b) => b.score - a.score);
+  let best = { desc:'', score:-1, priority:-1 };
+
+  for (const { description: d, score:s } of labels.slice(0,30)) {
+    if (s < MIN_OVERALL) continue;
+    if (TERMS_IGNORE.has(d)) continue;
+
+    const multiWord = d.trim().split(/\s+/).length > 1;
+    const isType    = COMMON_TYPES.has(d);
+
+    let p = 0;
+    if (multiWord && s >= MIN_SPECIFIC) p = 3;        // “Bald Eagle”
+    else if (isType && s >= MIN_TYPE)   p = 2;        // “Eagle”
+    else if (d === 'Bird')              p = 1;
+
+    if (p > best.priority || (p === best.priority && s > best.score))
+      best = { desc:d, score:s, priority:p };
+  }
+
+  if (best.priority >= 2) return best.desc;
+  throw new Error('No specific bird found');
+}
 
 // ──────────────────  HANDLEBARS  ──────────────────
 const hbs = handlebars.create({
@@ -912,6 +961,32 @@ app.post('/edit-profile', auth, async (req, res) => {
     res.render('pages/profile', { title: 'Your Profile', user: req.session.user, error: 'Failed to update profile' });
   }
 });
+
+app.post('/search',
+  upload.single('image'),
+async (req, res) => {
+try {
+// 1. If the user typed a name → do the Wikipedia search
+if (req.body.query && req.body.query.trim()) {
+const data = await fetchBirdInfoFromWikipedia(req.body.query.trim());
+return res.render('pages/search', { title:'Search', results:[data], query:req.body.query });
+}
+
+// 2. Otherwise they sent a picture → run your ML / API call here
+if (!req.file) return res.status(400).send('No image uploaded');
+
+// Example: send the file to your recognition service
+const speciesName = await recogniseBird(req.file.buffer); // <-- your code
+const data        = await fetchBirdInfoFromWikipedia(speciesName);
+
+return res.render('pages/search', { title:'Search', results:[data], query:speciesName });
+} catch (err) {
+console.error(err);
+return res.status(500).render('pages/search',
+{ title:'Search', error:'Image recognition failed', results:[], query:'' });
+}
+});
+
 
 // ---------- BROWSE POPULAR BIRD SPECIES ----------
 app.get('/browse', async (req, res) => {
