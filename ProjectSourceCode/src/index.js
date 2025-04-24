@@ -969,30 +969,50 @@ app.post('/edit-profile', auth, async (req, res) => {
   }
 });
 
+// ---------------------
+// SEARCH (image first)
+// ---------------------
 app.post('/search',
   upload.single('image'),
-async (req, res) => {
-try {
-// 1. If the user typed a name → do the Wikipedia search
-if (req.body.query && req.body.query.trim()) {
-const data = await fetchBirdInfoFromWikipedia(req.body.query.trim());
-return res.render('pages/search', { title:'Search', results:[data], query:req.body.query });
-}
+  async (req, res) => {
+    try {
+      // 1. If an image was uploaded → do ML lookup first
+      if (req.file) {
+        const speciesName = await recogniseBird(req.file.buffer);
+        const data        = await fetchBirdInfoFromWikipedia(speciesName);
+        return res.render('pages/search', {
+          title:   'Search',
+          results: [data],
+          query:   speciesName
+        });
+      }
 
-// 2. Otherwise they sent a picture → run your ML / API call here
-if (!req.file) return res.status(400).send('No image uploaded');
+      // 2. Otherwise, if the user typed a name → Wikipedia
+      if (req.body.query && req.body.query.trim()) {
+        const data = await fetchBirdInfoFromWikipedia(req.body.query.trim());
+        return res.render('pages/search', {
+          title:   'Search',
+          results: [data],
+          query:   req.body.query
+        });
+      }
 
-// Example: send the file to your recognition service
-const speciesName = await recogniseBird(req.file.buffer); // <-- your code
-const data        = await fetchBirdInfoFromWikipedia(speciesName);
+      // 3. Neither image nor text provided
+      return res
+        .status(400)
+        .send('Please upload an image or enter a search term');
+    } catch (err) {
+      console.error('Search error:', err);
+      return res.render('pages/search', {
+        title:   'Search',
+        error:   'Recognition or lookup failed',
+        results: [],
+        query:   ''
+      });
+    }
+  }
+);
 
-return res.render('pages/search', { title:'Search', results:[data], query:speciesName });
-} catch (err) {
-console.error(err);
-return res.status(500).render('pages/search',
-{ title:'Search', error:'Image recognition failed', results:[], query:'' });
-}
-});
 
 
 // ---------- BROWSE POPULAR BIRD SPECIES ----------
