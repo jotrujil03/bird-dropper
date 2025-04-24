@@ -1,0 +1,36 @@
+{{!-- views/pages/500.hbs --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>500 – Server Error</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- tiny bit of inline CSS so the page looks OK even without your main CSS -->
+  <style>
+    :root { font-family: system-ui, -apple-system, sans-serif; }
+    body  { margin: 0; padding: 2rem; display: grid; place-items: center; height: 100vh; background:#fafafa; color:#333;}
+    main  { text-align:center; max-width: 32rem; }
+    h1    { font-size: clamp(2.5rem, 8vw, 3.5rem); margin: 0 0 .5em; }
+    p     { margin: .75em 0; line-height:1.4; }
+    a.btn { display:inline-block; padding:.6em 1.4em; border-radius:4px;
+            text-decoration:none; background:#0069d9; color:#fff; }
+    pre   { margin-top:2rem; padding:1rem; background:#f3f3f3; overflow:auto;
+            border:1px solid #ddd; border-radius:4px; text-align:left; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Whoops!</h1>
+    <p>Something went wrong on our end.<br>
+       Please give it another try in a moment.</p>
+
+    <p><a href="/" class="btn">Back to Home</a></p>
+
+    {{!-- show stack trace only when `error` is passed in --}}
+    {{#if error}}
+      <pre>{{error}}</pre>
+    {{/if}}
+  </main>
+</body>
+</html>

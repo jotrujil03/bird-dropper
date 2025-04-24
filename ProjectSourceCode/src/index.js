@@ -7,6 +7,7 @@
 
 // ──────────────────  DEPENDENCIES  ──────────────────
 require('dotenv').config();
+require('express-async-errors');
 const express       = require('express');
 const app           = express()
 app.set('trust proxy', 1);
@@ -1230,6 +1231,15 @@ app.post('/update-profile-image', auth, upload.single('profileImage'), async (re
 // ────────────────────────────────────────────────
 //                     SERVER
 // ────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀  Server running on port ${PORT}`));
-module.exports = server; // for testing purposes
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (res.headersSent) return next(err);   // don’t double-write
+    res.status(500).render('pages/500');     // or res.json({error: '…'})
+  });
+    
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, () =>
+      console.log(`🚀  Server running on port ${PORT}`)
+    );
+    
+  module.exports = server;   // for tests
